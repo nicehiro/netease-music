@@ -173,7 +173,8 @@
 (defun init-frame ()
   (erase-buffer)
   (insert (format netease-music-title nickname))
-  (setq play-list-start-position (point)))
+  (get-playlist)
+  (insert (format-playlist-table play-list)))
 
 (defun play-song (song-url)
   "Use EMMS to play songs."
@@ -185,3 +186,49 @@
 
 (defun pause ()
   (if play-state (emms-stop)))
+
+(defun format-playlist-table (playlist)
+  (let ((playlist-table ""))
+    (dotimes (index (- (safe-length playlist) 1) playlist-table)
+      (setq playlist-table (concat playlist-table
+              (format "%s\n" (car (elt playlist index))))))))
+
+(defun format-playlist-songs-table (songs)
+  (let ((songs-table ""))
+    (dotimes (index (- (safe-length songs) 1) songs-table)
+      (setq songs-table (concat songs-table
+              (format "%s\n" (car (elt songs index))))))))
+
+(defun find-playlist-id (playlist-name)
+  (assoc-default playlist-name play-list))
+
+(defun jump-into-playlist-buffer ()
+  (interactive)
+  (setq playlist-name (get-current-line-content))
+  (setq id (find-playlist-id playlist-name))
+  (get-buffer-create (format "%s LIST" playlist-name))
+  (switch-to-buffer (format "%s LIST" playlist-name))
+  (get-playlist-detail id)
+  (erase-buffer)
+  (insert netease-music-title)
+  (insert (format-playlist-songs-table songs-list)))
+
+(defun find-song-id (song-name)
+  (assoc-default song-name songs-list))
+
+(defun jump-into-song-buffer ()
+  (interactive)
+  (setq song-name (get-current-line-content))
+  (setq id (find-song-id song-name))
+  (get-buffer-create (format "%s MUSIC" song-name))
+  (switch-to-buffer (format "%s MUSIC" song-name))
+  (setq song-url (get-song-real-url id))
+  (play-song song-url)
+  (erase-buffer)
+  (insert netease-music-title)
+  (insert song-name))
+
+(defun get-current-line-content ()
+  (car (split-string
+        (thing-at-point 'line t)
+        "\n")))
