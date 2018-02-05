@@ -158,6 +158,7 @@
   (let* ((json (request playlist-detail-url
                         (format-playlist-detail-args id)))
          (tracks (get-playlist-tracks json)))
+    (setq songs-list ())
     (dotimes (index (- (length tracks) 1))
       (setq song (get-song-from-tracks tracks index))
       (setq song-name (cdr (assoc 'name song)))
