@@ -1,0 +1,15 @@
+* NetEase Music Plug for Emacs
+
+** Installnation & Use
+- 安装 EMMS，网易云API node.js 版
+- 安装本插件
+- =M-x netease-music= ，输入用户名、密码登录网易云帐号
+- 选到你想要听的歌单， =M-x jump-into-playlist= 进入此歌单
+- 选到你想要听的歌曲， =M-x jump-into-songs= 进入此歌曲播放界面
+  
+** 有待完善的功能
+- 界面美化
+- 查看歌词
+- 查询歌曲
+- 查看评论
+
