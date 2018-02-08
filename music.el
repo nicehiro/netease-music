@@ -79,26 +79,24 @@
   "Return artist name about this song."
   (let* ((count (length (cdr (assoc 'artists tracks))))
          (artist-name ""))
-    (dotimes (index count)
+    (dotimes (index count artist-name)
       (setq name (cdr (assoc 'name (aref (cdr (assoc 'artists tracks)) index))))
-      (concat artist-name name))
-    artist-name))
+      (message name)
+      (setq artist-name (concat artist-name " & " name)))))
 
 (defun set-album-name (tracks)
   "Return album name about this song."
   (let* ((count (length (cdr (assoc 'albun tracks))))
          (track-name ""))
-    (dotimes (index count)
+    (dotimes (index count track-name)
       (setq name (cdr (assoc 'name (aref (cdr (assoc 'album tracks)) index))))
-      (concat track-name name))
-    track-name))
+      (setq track-name (concat track-name name)))))
 
 (defun format-song-detail (tracks instance)
     (setf (slot-value instance 'name) (set-song-name tracks))
     (setf (slot-value instance 'song-id) (set-song-id tracks))
     (setf (slot-value instance 'artist) (set-artist-name tracks))
     (setf (slot-value instance 'album) (set-album-name tracks)))
-
   
 (defclass PLAYLIST ()
   ((name)
@@ -219,12 +217,6 @@
     (setq user-id (set-user-id json))
     (format-user-detail user-id)))
 
-
-;; (defun set-user-details (user-id)
-;;   (let* ((json (request user-detail-url (format-user-detail-args user-id))))
-;;     (setq nickname (set-user-nickname json))
-;;     (setq avatar-url (set-user-avatar-url json))))
-
 (defun request (url-pattern args)
   "Return json by request the url."
   (let (json)
@@ -249,12 +241,8 @@
              (playlist-ins (make-instance 'PLAYLIST))
              (list-id (cdr (assoc 'id lst)))
              (name (cdr (assoc 'name lst))))
-        (format-playlist-detail playlist-ins json list-id)
+        (format-playlist-detail playlist-ins lst list-id)
         (push (cons name playlist-ins) play-list)))))
-;;             (name (cdr (assoc 'name lst)))
-;;             (list-id (cdr (assoc 'id lst)))
-;;             (cell (cons name list-id)))
-;;        (push cell play-list)))))
 
 (defun get-playlist-tracks (json)
   "Get tracks from playlist."
@@ -276,9 +264,6 @@
       (setq song-ins (make-instance 'SONG))
       (format-song-detail song song-ins)
       (push (cons song-name song-ins) songs-list))))
-;;      (setq song-name (cdr (assoc 'name song)))
-;;      (setq song-id (cdr (assoc 'id song)))
-;;      (push (cons song-name song-id) songs-list))))
 
 (defun get-song-real-url (id)
   "Return song's real url."
@@ -346,6 +331,7 @@
   (erase-buffer)
   (insert (format-netease-title playlist-name 
                                 (find-playlist-description playlist-name)))
+  (insert "Song List:\n")
   (insert (format-playlist-songs-table songs-list)))
 
 (defun find-song-id (song-name)
@@ -373,8 +359,7 @@
   (setq song-url (get-song-real-url id))
   (play-song song-url)
   (erase-buffer)
-  (insert (format-netease-title song-name (format "%s  %s" artist album)))
-  (insert song-name))
+  (insert (format-netease-title song-name (format "%s  %s" artist album))))
 
 (defun get-current-line-content ()
   "Return current line's content."
