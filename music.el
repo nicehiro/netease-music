@@ -49,14 +49,79 @@
   "Song args.")
 
 (defconst netease-music-title
-  "* NetEase Music\n %s  等级：%s 听歌数：%s \n%s \n** 歌单列表 \n")
+  "* NetEase Music\n %s  等级：%s 听歌数：%s \n%s \n** %s \n%s \n")
 
-(defun format-netease-title ()
+(defun format-netease-title (banner-string description)
   (format netease-music-title
           (slot-value admin-ins 'name)
           (slot-value admin-ins 'level)
           (slot-value admin-ins 'listenSongs)
-          (slot-value admin-ins 'description)))
+          (slot-value admin-ins 'description)
+          banner-string
+          description))
+
+(defun netease-music-playlist-description (playlist-name)
+  (find-playlist-description playlist-name))
+
+(defclass SONG ()
+  ((name)
+   (artist)
+   (album)
+   (song-id)))
+
+(defun set-song-name (tracks)
+  (cdr (assoc 'name tracks)))
+
+(defun set-song-id (tracks)
+  (cdr (assoc 'id tracks)))
+
+(defun set-artist-name (tracks)
+  "Return artist name about this song."
+  (let* ((count (length (cdr (assoc 'artists tracks))))
+         (artist-name ""))
+    (dotimes (index count)
+      (setq name (cdr (assoc 'name (aref (cdr (assoc 'artists tracks)) index))))
+      (concat artist-name name))
+    artist-name))
+
+(defun set-album-name (tracks)
+  "Return album name about this song."
+  (let* ((count (length (cdr (assoc 'albun tracks))))
+         (track-name ""))
+    (dotimes (index count)
+      (setq name (cdr (assoc 'name (aref (cdr (assoc 'album tracks)) index))))
+      (concat track-name name))
+    track-name))
+
+(defun format-song-detail (tracks instance)
+    (setf (slot-value instance 'name) (set-song-name tracks))
+    (setf (slot-value instance 'song-id) (set-song-id tracks))
+    (setf (slot-value instance 'artist) (set-artist-name tracks))
+    (setf (slot-value instance 'album) (set-album-name tracks)))
+
+  
+(defclass PLAYLIST ()
+  ((name)
+   (id)
+   (description)
+   (user-id)))
+
+(defun set-playlist-name (json)
+  (cdr (assoc 'name json)))
+
+(defun set-playlist-description (json)
+  (cdr (assoc 'description json)))
+
+(defun set-playlist-userid (json)
+  (cdr (assoc 'userId json)))
+
+(defun format-playlist-detail (instance json id)
+    (setf (slot-value instance 'user-id) (set-playlist-userid json))
+    (setf (slot-value instance 'name) (set-playlist-name json))
+    (setf (slot-value instance 'description) (set-playlist-description json))
+    (setf (slot-value instance 'id) id))
+
+;;; User Details Start Here.
 
 (defclass admin ()
   ((name)
@@ -64,14 +129,42 @@
    (listenSongs)
    (description)))
 
-(defvar admin-ins (make-instance 'admin))
+(defun set-user-id (json)
+  "Return user's id from JSON."
+  (cdr (assoc 'id (cdr (assoc 'account json)))))
+
+(defun set-user-nickname (json)
+  "Return user's nickname."
+  (cdr (assoc 'nickname (cdr (assoc 'profile json)))))
+
+(defun set-user-level (json)
+  "Return user's netease-music level."
+  (cdr (assoc 'level json)))
+
+(defun set-user-listenSongs (json)
+  "Retutn user's listensongs count."
+  (cdr (assoc 'listenSongs json)))
+
+(defun set-user-description (json)
+  "Return user's description. Default is nil."
+  (cdr (assoc 'description (cdr (assoc 'profile json)))))
+
+(defun set-user-avatar-url (json)
+  "Return user's avatar-url."
+  (cdr (assoc 'avatarUrl (cdr (assoc 'profile json)))))
+
+(defvar admin-ins
+  (make-instance 'admin))
 
 (defun format-user-detail (id)
+  "Initialize user details."
   (let* ((json (request user-detail-url (format-user-detail-args id))))
     (setf (slot-value admin-ins 'name) (set-user-nickname json))
     (setf (slot-value admin-ins 'level) (set-user-level json))
     (setf (slot-value admin-ins 'listenSongs) (set-user-listenSongs json))
     (setf (slot-value admin-ins 'description) (set-user-description json))))
+
+;;; User Details Ends Here.
 
 (defun format-login-args (phone password)
   "Format login args."
@@ -126,24 +219,6 @@
     (setq user-id (set-user-id json))
     (format-user-detail user-id)))
 
-(defun set-user-id (json)
-  "Return user id from JSON."
-  (cdr (assoc 'id (cdr (assoc 'account json)))))
-
-(defun set-user-nickname (json)
-  (cdr (assoc 'nickname (cdr (assoc 'profile json)))))
-
-(defun set-user-level (json)
-  (cdr (assoc 'level json)))
-
-(defun set-user-listenSongs (json)
-  (cdr (assoc 'listenSongs json)))
-
-(defun set-user-description (json)
-  (cdr (assoc 'description (cdr (assoc 'profile json)))))
-
-(defun set-user-avatar-url (json)
-  (cdr (assoc 'avatarUrl (cdr (assoc 'profile json)))))
 
 ;; (defun set-user-details (user-id)
 ;;   (let* ((json (request user-detail-url (format-user-detail-args user-id))))
@@ -171,10 +246,15 @@
     (setq play-list ())
     (dotimes (i (length detail))
       (let* ((lst (aref detail i))
-             (name (cdr (assoc 'name lst)))
+             (playlist-ins (make-instance 'PLAYLIST))
              (list-id (cdr (assoc 'id lst)))
-             (cell (cons name list-id)))
-        (push cell play-list)))))
+             (name (cdr (assoc 'name lst))))
+        (format-playlist-detail playlist-ins json list-id)
+        (push (cons name playlist-ins) play-list)))))
+;;             (name (cdr (assoc 'name lst)))
+;;             (list-id (cdr (assoc 'id lst)))
+;;             (cell (cons name list-id)))
+;;        (push cell play-list)))))
 
 (defun get-playlist-tracks (json)
   "Get tracks from playlist."
@@ -193,8 +273,12 @@
     (dotimes (index (length tracks))
       (setq song (get-song-from-tracks tracks index))
       (setq song-name (cdr (assoc 'name song)))
-      (setq song-id (cdr (assoc 'id song)))
-      (push (cons song-name song-id) songs-list))))
+      (setq song-ins (make-instance 'SONG))
+      (format-song-detail song song-ins)
+      (push (cons song-name song-ins) songs-list))))
+;;      (setq song-name (cdr (assoc 'name song)))
+;;      (setq song-id (cdr (assoc 'id song)))
+;;      (push (cons song-name song-id) songs-list))))
 
 (defun get-song-real-url (id)
   "Return song's real url."
@@ -205,7 +289,8 @@
 (defun init-frame ()
   "Initial main interface. When you first login netease-music list all your playlist."
   (erase-buffer)
-  (insert (format-netease-title))
+  (insert (format-netease-title "Signature:"
+                                (find-admin-description)))
   (get-playlist)
   (insert (format-playlist-table play-list)))
 
@@ -236,9 +321,18 @@
       (setq songs-table (concat songs-table
               (format "%s\n" (car (elt songs index))))))))
 
+(defun find-admin-description ()
+  (slot-value admin-ins 'description))
+
 (defun find-playlist-id (playlist-name)
   "Return playlist id from play-list which contains the users' all playlist."
-  (assoc-default playlist-name play-list))
+;;  (assoc-default playlist-name play-list))
+  (setq playlist-ins (assoc-default playlist-name play-list))
+  (slot-value playlist-ins 'id))
+
+(defun find-playlist-description (playlist-name)
+  (setq playlist-ins (assoc-default playlist-name play-list))
+  (slot-value playlist-ins 'description))
 
 (defun jump-into-playlist-buffer ()
   "Switch to the playlist buffer whose name is this line's content."
@@ -248,29 +342,38 @@
   (get-buffer-create "netease-music-playlist")
   (switch-to-buffer "netease-music-playlist")
   (netease-music-mode)
-  (erase-buffer)
   (get-playlist-detail id)
   (erase-buffer)
-  (insert (format-netease-title))
+  (insert (format-netease-title playlist-name 
+                                (find-playlist-description playlist-name)))
   (insert (format-playlist-songs-table songs-list)))
 
 (defun find-song-id (song-name)
-  "Return song id from songs-list which contains this playlist's all song."
-  (assoc-default song-name songs-list))
+  (setq song-ins (assoc-default song-name songs-list))
+  (slot-value song-ins 'song-id))
+
+(defun find-song-album (song-name)
+  (setq song-ins (assoc-default song-name songs-list))
+  (slot-value song-ins 'album))
+
+(defun find-song-artist (song-name)
+  (setq song-ins (assoc-default song-name songs-list))
+  (slot-value song-ins 'artist))
 
 (defun jump-into-song-buffer ()
   "Switch to the song's buffer whose name is this line's content."
   (interactive)
   (setq song-name (get-current-line-content))
   (setq id (find-song-id song-name))
+  (setq album (find-song-album song-name))
+  (setq artist (find-song-artist song-name))
   (get-buffer-create "netease-music-playing")
   (switch-to-buffer "netease-music-playing")
   (netease-music-mode)
-  (erase-buffer)
   (setq song-url (get-song-real-url id))
   (play-song song-url)
   (erase-buffer)
-  (insert (format-netease-title))
+  (insert (format-netease-title song-name (format "%s  %s" artist album)))
   (insert song-name))
 
 (defun get-current-line-content ()
