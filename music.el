@@ -6,8 +6,8 @@
 (defvar play-list ()
   "Your Play List.")
 
-(defvar play-list-start-position nil
-  "Play list start position in netease-music buffer.")
+(defvar current-playing nil
+  "Your current playing song.")
 
 (defvar songs-list ()
   "Songs list. A playlist's all songs, and you can add other song into it.")
@@ -33,6 +33,9 @@
 (defconst song-url "/music/url"
   "Music real url.")
 
+(defconst lyric-url "/lyric"
+  "Lyric url.")
+
 (defconst login-args "?phone=%s&password=%s"
  "Login args.")
 
@@ -47,6 +50,13 @@
 
 (defconst song-args "?id=%s"
   "Song args.")
+
+(defconst lyric-args "?id=%s"
+  "Lyric args.")
+
+(defun format-lyric-args (song-id)
+  "Format lyric args."
+  (format lyric-args song-id))
 
 (defconst netease-music-title
   "* NetEase Music\n %s  等级：%s 听歌数：%s \n%s \n** %s \n%s \n")
@@ -82,7 +92,7 @@
     (dotimes (index count artist-name)
       (setq name (cdr (assoc 'name (aref (cdr (assoc 'artists tracks)) index))))
       (message name)
-      (setq artist-name (concat artist-name " & " name)))))
+      (setq artist-name (concat name "  " artist-name)))))
 
 (defun set-album-name (tracks)
   "Return album name about this song."
@@ -108,7 +118,10 @@
   (cdr (assoc 'name json)))
 
 (defun set-playlist-description (json)
-  (cdr (assoc 'description json)))
+  (let ((description (cdr (assoc 'description json))))
+    (if (equal description nil)
+        "暂无歌单简介"
+      description)))
 
 (defun set-playlist-userid (json)
   (cdr (assoc 'userId json)))
@@ -203,8 +216,6 @@
   (netease-music-init))
 
 (define-derived-mode netease-music-mode org-mode "netease-music")
-(define-derived-mode netease-music-mode org-mode "netease-music-playing")
-(define-derived-mode netease-music-mode org-mode "netease-music-playlist")
 
 (defun netease-music-init ()
   (setq phone (read-string "Your Phone Number Please: "))
@@ -265,6 +276,13 @@
       (format-song-detail song song-ins)
       (push (cons song-name song-ins) songs-list))))
 
+(defun get-lyric (song-id)
+  (let* ((json (request lyric-url
+                        (format-lyric-args song-id)))
+         (lrc (cdr (assoc 'lrc json)))
+         (lyric (cdr (assoc 'lyric lrc))))
+    lyric))
+
 (defun get-song-real-url (id)
   "Return song's real url."
   (let* ((json (request song-url
@@ -277,11 +295,16 @@
   (insert (format-netease-title "Signature:"
                                 (find-admin-description)))
   (get-playlist)
+  (insert "\n*** 歌单列表\n")
   (insert (format-playlist-table play-list)))
 
 (defun play-song (song-url)
   "Use EMMS to play songs."
   (emms-play-url song-url))
+
+(defun play-songslist ()
+  )
+(add-hook 'emms-player-finished-hook 'play-next)
 
 (defun play ()
   "Play current song with EMMS."
@@ -311,7 +334,6 @@
 
 (defun find-playlist-id (playlist-name)
   "Return playlist id from play-list which contains the users' all playlist."
-;;  (assoc-default playlist-name play-list))
   (setq playlist-ins (assoc-default playlist-name play-list))
   (slot-value playlist-ins 'id))
 
@@ -321,7 +343,6 @@
 
 (defun jump-into-playlist-buffer ()
   "Switch to the playlist buffer whose name is this line's content."
-  (interactive)
   (setq playlist-name (get-current-line-content))
   (setq id (find-playlist-id playlist-name))
   (get-buffer-create "netease-music-playlist")
@@ -331,7 +352,7 @@
   (erase-buffer)
   (insert (format-netease-title playlist-name 
                                 (find-playlist-description playlist-name)))
-  (insert "Song List:\n")
+  (insert "*** Song List:\n")
   (insert (format-playlist-songs-table songs-list)))
 
 (defun find-song-id (song-name)
@@ -348,8 +369,10 @@
 
 (defun jump-into-song-buffer ()
   "Switch to the song's buffer whose name is this line's content."
-  (interactive)
   (setq song-name (get-current-line-content))
+  (play-song-by-name song-name))
+
+(defun play-song-by-name (song-name)
   (setq id (find-song-id song-name))
   (setq album (find-song-album song-name))
   (setq artist (find-song-artist song-name))
@@ -358,8 +381,36 @@
   (netease-music-mode)
   (setq song-url (get-song-real-url id))
   (play-song song-url)
+  (setq current-playing song-name)
   (erase-buffer)
-  (insert (format-netease-title song-name (format "%s  %s" artist album))))
+  (insert (format-netease-title song-name (format "%s  %s" artist album)))
+  (insert (get-lyric id)))
+
+(defun jump-into ()
+  (interactive)
+  (let* ((current-buffer-name (buffer-name)))
+    (if (equal current-buffer-name "netease-music")
+        (jump-into-playlist-buffer)
+      (jump-into-song-buffer))))
+
+(defun play-next ()
+  (interactive)
+  (setq next-song-name current-playing)
+  (let* ((count (length songs-list)))
+    (dotimes (index count next-song-name)
+      (let* ((block (nth index songs-list))
+             (song (cdr block))
+             (song-name (slot-value song 'name)))
+        (if (equal song-name current-playing)
+               (setq next-song-name
+                  (slot-value (cdr (nth (+ index 1) songs-list))
+                              'name))))))
+  (play-song-by-name next-song-name))
+
+(defun add-to-songslist (song)
+  (interactive)
+  (let ((name (slot-value song 'name)))
+    (push (cons name song) songs-list)))
 
 (defun get-current-line-content ()
   "Return current line's content."
