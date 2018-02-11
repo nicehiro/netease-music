@@ -6,6 +6,7 @@
 (defvar play-list ()
   "Your Play List.")
 
+
 (defvar current-playing nil
   "Your current playing song.")
 
@@ -36,6 +37,11 @@
 (defconst lyric-url "/lyric"
   "Lyric url.")
 
+(defconst personal-fm-url "/personal_fm"
+  "Personal f.m. url.")
+
+
+
 (defconst login-args "?phone=%s&password=%s"
  "Login args.")
 
@@ -59,7 +65,7 @@
   (format lyric-args song-id))
 
 (defconst netease-music-title
-  "* NetEase Music\n %s  等级：%s 听歌数：%s \n%s \n** %s \n%s \n")
+  "* NetEase Music\n %s  等级：%s 听歌数：%s \n私人FM\n%s \n** %s \n%s \n")
 
 (defun format-netease-title (banner-string description)
   (format netease-music-title
@@ -207,7 +213,7 @@
   "User avatar url.")
 
 (defun format-request-url (url args)
-  (concat api url args))
+  (url-unhex-string (concat api url args)))
 
 (defun netease-music ()
   (interactive)
@@ -215,7 +221,8 @@
   (netease-music-mode)
   (netease-music-init))
 
-(define-derived-mode netease-music-mode org-mode "netease-music")
+(define-derived-mode netease-music-mode org-mode "netease-music"
+  (define-key netease-music-mode-map "RET" 'jump-into))
 
 (defun netease-music-init ()
   (setq phone (read-string "Your Phone Number Please: "))
@@ -289,6 +296,17 @@
                         (format-song-args id))))
     (cdr (assoc 'url (aref (cdr (assoc 'data json)) 0)))))
 
+(defun get-personal-fm ()
+  (let* ((json (request personal-fm-url ""))
+         (data (cdr (assoc 'data json))))
+    (setq songs-list ())
+    (dotimes (index (length data))
+      (setq song (aref data index))
+      (setq song-name (cdr (assoc 'name song)))
+      (setq song-ins (make-instance 'SONG))
+      (format-song-detail song song-ins)
+      (push (cons song-name song-ins) songs-list))))
+
 (defun init-frame ()
   "Initial main interface. When you first login netease-music list all your playlist."
   (erase-buffer)
@@ -304,7 +322,6 @@
 
 (defun play-songslist ()
   )
-(add-hook 'emms-player-finished-hook 'play-next)
 
 (defun play ()
   "Play current song with EMMS."
@@ -353,7 +370,8 @@
   (insert (format-netease-title playlist-name 
                                 (find-playlist-description playlist-name)))
   (insert "*** Song List:\n")
-  (insert (format-playlist-songs-table songs-list)))
+  (insert (format-playlist-songs-table songs-list))
+  (goto-char (point-min)))
 
 (defun find-song-id (song-name)
   (setq song-ins (assoc-default song-name songs-list))
@@ -366,6 +384,15 @@
 (defun find-song-artist (song-name)
   (setq song-ins (assoc-default song-name songs-list))
   (slot-value song-ins 'artist))
+
+(defun find-song-item (item song-name)
+  (setq song-ins (assoc-default song-name songs-list))
+  (slot-value song-ins 'item))
+
+(defmacro find-song (item)
+  `(defun ,(intern (format "find-song-%s" item)) ()
+     ,(format "Find %s in song." item)
+     (find-song-item ,item song-name)))
 
 (defun jump-into-song-buffer ()
   "Switch to the song's buffer whose name is this line's content."
@@ -384,16 +411,29 @@
   (setq current-playing song-name)
   (erase-buffer)
   (insert (format-netease-title song-name (format "%s  %s" artist album)))
-  (insert (get-lyric id)))
+  (insert (get-lyric id))
+  (goto-char (point-min)))
+
+(defun jump-into-personal-fm ()
+  (if))
 
 (defun jump-into ()
+  "Jump into next buffer based on this line's content."
   (interactive)
   (let* ((current-buffer-name (buffer-name)))
-    (if (equal current-buffer-name "netease-music")
-        (jump-into-playlist-buffer)
-      (jump-into-song-buffer))))
+    (cond ((equal (get-current-line-content) "私人FM")
+           (message "私人FM")
+           (jump-into-personal-fm))
+          ((equal current-buffer-name "netease-music")
+           (jump-into-playlist-buffer))
+          ((equal current-buffer-name "netease-music-playlist")
+           (jump-into-song-buffer)))))
+
+(add-hook 'emms-player-finished-hook 'play-next)
 
 (defun play-next ()
+  "Return next song name in songs-list.
+   这里有一个问题。实现下一首播放我直接将这个函数加到了当前歌曲播放完的 emms-fin"
   (interactive)
   (setq next-song-name current-playing)
   (let* ((count (length songs-list)))
@@ -405,9 +445,11 @@
                (setq next-song-name
                   (slot-value (cdr (nth (+ index 1) songs-list))
                               'name))))))
+  (message next-song-name)
   (play-song-by-name next-song-name))
 
 (defun add-to-songslist (song)
+  "Add song to songs-list."
   (interactive)
   (let ((name (slot-value song 'name)))
     (push (cons name song) songs-list)))

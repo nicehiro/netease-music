@@ -8,7 +8,7 @@
 - 选到你想要听的歌曲， =M-x jump-into-songs= 进入此歌曲播放界面
   
 ** 有待完善的功能
-*** TODO 将歌单加入听歌列表
+*** DONE 将歌单加入听歌列表
 *** DONE 界面美化
 *** DONE 查看歌词
 *** TODO 查询歌曲
@@ -17,3 +17,7 @@
 *** TODO 使用Elisp破解而不依赖外部的API服务
 *** TODO 新建一个Process而不依赖EMMS
     参考 [[https://github.com/zhengyuli/WangyiMusic][WangyiMusic]] 。
+
+** 改进
+*** 重复性代码使用宏精简
+*** 
