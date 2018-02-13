@@ -6,14 +6,20 @@
 - =M-x netease-music= ，输入用户名、密码登录网易云帐号
 - 选到你想要听的歌单， =M-x jump-into= 进入此歌单
 - 选到你想要听的歌曲， =M-x jump-into= 进入此歌曲播放界面
+- 自动播放本歌单下一首歌曲，如需切歌， =M-x play-next= 可以直接切歌
+- =M-x netease-music-search= 查询歌曲
+- =M-x i-like-it= 收藏歌曲
   
 ** 有待完善的功能
-*** TODO 查询歌曲
-*** TODO 查看艺人
-*** TODO 使用Elisp破解而不依赖外部的API服务
-*** TODO 新建一个Process而不依赖EMMS
-    参考 [[https://github.com/zhengyuli/WangyiMusic][WangyiMusic]] 。
+- 查看艺人
 
 ** 改进
-*** 重复性代码使用宏精简
-*** 将服务器搭到服务器，省得其他用户搭建请求环境
+- 重复性代码使用宏精简
+- 将服务器搭到服务器，省得其他用户搭建请求环境
+- 使用Elisp破解而不依赖外部的API服务
+- 新建一个Process而不依赖EMMS
+    参考 [[https://github.com/zhengyuli/WangyiMusic][WangyiMusic]] 。
+- 播放列表页面高亮当前播放曲目
+- 查询歌曲使用 popup window 而不占用整个 window
+- 状态栏显示美化：不要显示歌曲链接而显示歌曲名
+

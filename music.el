@@ -1,4 +1,6 @@
 (require 'json)
+(require 'url)
+(require 'org)
 
 (defvar play-state nil
   "Song play state, nil or t.")
@@ -42,6 +44,9 @@
 (defconst search-url "/search"
   "Search url.")
 
+(defconst like-url "/like"
+  "I like it url.")
+
 (defconst login-args "?phone=%s&password=%s"
  "Login args.")
 
@@ -63,14 +68,21 @@
 (defconst search-args "?keywords=%s"
   "Search args.")
 
+(defconst like-args "?id=%s"
+  "I like it args.")
+
 (defun format-lyric-args (song-id)
   "Format lyric args."
   (format lyric-args song-id))
+
+(defun format-like-args (song-id)
+  (format like-args song-id))
 
 (defconst netease-music-title
   "* NetEase Music\n %s  等级：%s 听歌数：%s \n私人FM\n%s \n** %s \n%s \n")
 
 (defun format-netease-title (banner-string description)
+  "Format netease title."
   (format netease-music-title
           (slot-value admin-ins 'name)
           (slot-value admin-ins 'level)
@@ -89,9 +101,11 @@
    (song-id)))
 
 (defun set-song-name (tracks)
+  "Return song name about this song."
   (cdr (assoc 'name tracks)))
 
 (defun set-song-id (tracks)
+  "Return song id about this song."
   (cdr (assoc 'id tracks)))
 
 (defun set-artist-name (tracks)
@@ -112,10 +126,13 @@
       (setq track-name (concat track-name name)))))
 
 (defun format-song-detail (tracks instance)
+  "Format SONG instance."
     (setf (slot-value instance 'name) (set-song-name tracks))
     (setf (slot-value instance 'song-id) (set-song-id tracks))
     (setf (slot-value instance 'artist) (set-artist-name tracks))
     (setf (slot-value instance 'album) (set-album-name tracks)))
+
+;;; Class PLAYLIST start here.
   
 (defclass PLAYLIST ()
   ((name)
@@ -174,7 +191,8 @@
   (cdr (assoc 'avatarUrl (cdr (assoc 'profile json)))))
 
 (defvar admin-ins
-  (make-instance 'admin))
+  (make-instance 'admin)
+  "When you login will create a user instance.")
 
 (defun format-user-detail (id)
   "Initialize user details."
@@ -220,6 +238,7 @@
   "User avatar url.")
 
 (defun format-request-url (url args)
+  "Format request url."
   (url-unhex-string (concat api url args)))
 
 (defun netease-music ()
@@ -229,15 +248,23 @@
   (netease-music-init))
 
 (define-derived-mode netease-music-mode org-mode "netease-music"
-  (define-key netease-music-mode-map "RET" 'jump-into))
+  "Still don't know why these keys don't work."
+  (define-key netease-music-mode-map "C-c RET" 'jump-into)
+  (define-key netease-music-mode-map "C-c l" 'i-like-it)
+  (define-key netease-music-mode-map "C-c n" 'play-next)
+  (define-key netease-music-mode-map "C-c p" 'pause)
+  (evil-define-key 'normal netease-music-mode-map "RET" 'jump-into))
+
 
 (defun netease-music-init ()
+  "Initialize netease music information."
   (setq phone (read-string "Your Phone Number Please: "))
   (setq password (read-string "Your Password: "))
   (netease-music-login phone password)
   (init-frame))
 
 (defun netease-music-login (username password)
+  "Login netease music."
   (let* ((json (request login-url (format-login-args phone password))))
     (setq user-id (set-user-id json))
     (format-user-detail user-id)))
@@ -267,8 +294,8 @@
              (list-id (cdr (assoc 'id lst)))
              (name (cdr (assoc 'name lst))))
         (format-playlist-detail playlist-ins lst list-id)
-        (push (cons name playlist-ins) play-list)))
-    (reverse-list play-list)))
+        (push (cons name playlist-ins) play-list))))
+  (setq play-list (reverse-list play-list)))
 
 (defun get-playlist-tracks (json)
   "Get tracks from playlist."
@@ -289,8 +316,8 @@
       (setq song-name (cdr (assoc 'name song)))
       (setq song-ins (make-instance 'SONG))
       (format-song-detail song song-ins)
-      (push (cons song-name song-ins) songs-list))
-    (reverse-list songs-list)))
+      (push (cons song-name song-ins) songs-list)))
+  (setq songs-list (reverse-list songs-list)))
 
 (defun netease-music-search ()
   "Search songs. Multiple keywords can be separated by SPC."
@@ -307,11 +334,13 @@
              (song-ins (make-instance 'SONG)))
         (format-song-detail song song-ins)
         (push (cons song-name song-ins) search-songs)))
-    (with-temp-buffer
+    (get-buffer-create "netease-music-search")
+    (with-current-buffer "netease-music-search"
       (erase-buffer)
       (netease-music-mode)
-      (insert (format-netease-title playlist-name
-                                  (find-playlist-description playlist-name)))
+      (insert (format-netease-title "Search Results: "
+                                  "Press jump-into to listen the song.\n
+                                   Press add-to-songslist can add to the songs list."))
       (insert "*** Song List:\n")
       (insert (format-playlist-songs-table search-songs)))))
 
@@ -406,14 +435,17 @@
     (goto-char (point-min))))
 
 (defun find-song-id (song-name)
+  "Find song's id of current song."
   (setq song-ins (assoc-default song-name songs-list))
   (slot-value song-ins 'song-id))
 
 (defun find-song-album (song-name)
+  "Find song's album of current song."
   (setq song-ins (assoc-default song-name songs-list))
   (slot-value song-ins 'album))
 
 (defun find-song-artist (song-name)
+  "Find song's artist of current song."
   (setq song-ins (assoc-default song-name songs-list))
   (slot-value song-ins 'artist))
 
@@ -427,7 +459,6 @@
      (find-song-item ,item song-name)))
 
 (defun jump-into-song-buffer ()
-  (interactive)
   "Switch to the song's buffer whose name is this line's content."
   (setq song-name (get-current-line-content))
   (play-song-by-name song-name))
@@ -450,8 +481,16 @@
     (goto-char (point-min))))
 
 (defun jump-into-personal-fm ()
+  "Jump into your personal fm songs list."
   (get-personal-fm)
-  (jump-into-playlist-buffer))
+  (with-current-buffer "netease-music-playlist"
+    (erase-buffer)
+    (netease-music-mode)
+    (insert (format-netease-title "私人FM"
+                                  "你的私人 FM 听完之后再次请求可以获得新的歌曲"))
+    (insert "*** Song List:\n")
+    (insert (format-playlist-songs-table songs-list))
+    (goto-char (point-min))))
 
 (defun jump-into ()
   "Jump into next buffer based on this line's content."
@@ -506,8 +545,17 @@
         "\n")))
 
 (defun reverse-list (lst)
+  "Reverse list."
   (do ((a lst b)
        (b (cdr lst) (cdr b))
        (c nil a))
     ((atom a) c)
     (rplacd a c)))
+
+(defun i-like-it ()
+  (interactive)
+  (request like-url
+           (format-like-args (slot-value
+                              (cdr (assoc current-playing songs-list))
+                              'song-id)))
+  (message "Add to your favorite playlist!"))
