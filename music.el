@@ -2,14 +2,31 @@
 (require 'url)
 (require 'org)
 
-(defvar play-state nil
-  "Song play state, nil or t.")
+(defconst buffer-name-search "Search Results"
+  "Popup window buffer's name.")
 
 (defvar play-list ()
   "Your Play List.")
 
 (defvar current-playing nil
   "Your current playing song.")
+
+(defvar current-playing-song (make-instance 'SONG)
+  "This is current playing SONG.")
+
+(defun format-current-playing-song (name artist album song-id)
+  (setf (slot-value current-playing-song 'name) name)
+  (setf (slot-value current-playing-song 'artist) artist)
+  (setf (slot-value current-playing-song 'album) album)
+  (setf (slot-value current-playing-song 'song-id) song-id))
+
+(defun format-user-detail (id)
+  "Initialize user details."
+  (let* ((json (request user-detail-url (format-user-detail-args id))))
+    (setf (slot-value admin-ins 'name) (set-user-nickname json))
+    (setf (slot-value admin-ins 'level) (set-user-level json))
+    (setf (slot-value admin-ins 'listenSongs) (set-user-listenSongs json))
+    (setf (slot-value admin-ins 'description) (set-user-description json))))
 
 (defvar songs-list ()
   "Songs list. A playlist's all songs, and you can add other song into it.")
@@ -248,13 +265,12 @@
   (netease-music-init))
 
 (define-derived-mode netease-music-mode org-mode "netease-music"
-  "Still don't know why these keys don't work."
-  (define-key netease-music-mode-map "C-c RET" 'jump-into)
-  (define-key netease-music-mode-map "C-c l" 'i-like-it)
-  (define-key netease-music-mode-map "C-c n" 'play-next)
-  (define-key netease-music-mode-map "C-c p" 'pause)
-  (evil-define-key 'normal netease-music-mode-map "RET" 'jump-into))
-
+  "Key bindings of netease-music-mode."
+  (evil-define-key 'normal netease-music-mode-map (kbd "RET") 'jump-into)
+  (evil-define-key 'normal netease-music-mode-map (kbd "l") 'i-like-it)
+  (evil-define-key 'normal netease-music-mode-map (kbd "n") 'play-next)
+  (evil-define-key 'normal netease-music-mode-map (kbd "p") 'pause)
+  (evil-define-key 'normal netease-music-mode-map (kbd "q") 'quit-window))
 
 (defun netease-music-init ()
   "Initialize netease music information."
@@ -323,26 +339,27 @@
   "Search songs. Multiple keywords can be separated by SPC."
   (interactive)
   (setq keywords (read-string "Please input the keywords you want to search: "))
+  (setq search-songs ())
   (let* ((json (request search-url
                         (format-search-args keywords)))
          (songs (cdr (assoc 'songs (cdr (assoc 'result json)))))
-         (count (length songs))
-         (search-songs ()))
+         (count (length songs)))
     (dotimes (index count search-songs)
       (let* ((song (get-song-from-tracks songs index))
              (song-name (cdr (assoc 'name song)))
              (song-ins (make-instance 'SONG)))
         (format-song-detail song song-ins)
         (push (cons song-name song-ins) search-songs)))
-    (get-buffer-create "netease-music-search")
-    (with-current-buffer "netease-music-search"
-      (erase-buffer)
-      (netease-music-mode)
-      (insert (format-netease-title "Search Results: "
-                                  "Press jump-into to listen the song.\n
-                                   Press add-to-songslist can add to the songs list."))
-      (insert "*** Song List:\n")
-      (insert (format-playlist-songs-table search-songs)))))
+    (setq current-config (current-window-configuration))
+    ;;; popup window
+    (popwin:popup-buffer (get-buffer-create buffer-name-search))
+    (switch-to-buffer buffer-name-search)
+    (erase-buffer)
+    (netease-music-mode))
+    (insert (format-netease-title "Search Results: "
+                                "Press jump-into to listen the song.\nPress add-to-songslist can add to the songs list."))
+    (insert "*** Song List:\n")
+    (insert (format-playlist-songs-table search-songs)))
 
 (defun get-lyric (song-id)
   "Return lyric of current song."
@@ -472,13 +489,17 @@
   (setq song-url (get-song-real-url id))
   (play-song song-url)
   (setq current-playing song-name)
+  (format-current-playing-song song-name artist album id)
   (with-current-buffer "netease-music-playing"
     (erase-buffer)
     (netease-music-mode)
     (insert (format-netease-title song-name
                                   (format "*%s*  *%s*" artist album)))
     (insert (get-lyric id))
-    (goto-char (point-min))))
+    (goto-char (point-min)))
+  (with-current-buffer "netease-music-playlist"
+    (goto-char (point-min))
+    (search-forward (slot-value current-playing-song 'name))))
 
 (defun jump-into-personal-fm ()
   "Jump into your personal fm songs list."
@@ -509,28 +530,32 @@
 ;;; when emms finished current song's play, auto play next song.
 (add-hook 'emms-player-finished-hook 'play-next)
 
+;;; 这里的函数写的太丑了！！！可是又没有什么好办法现在……
 (defun play-next ()
   "Return next song name in songs-list."
   (interactive)
   (eval-buffer "music.el")
-  (setq next-song-name current-playing)
-  (setq can-play 1)
-  (let* ((count (length songs-list)))
+  (setq current-playing-song-name
+        (slot-value current-playing-song 'name))
+  (setq next-song-name current-playing-song-name)
+  (setq can-play nil)
+  (let* ((count (length songs-list))
+         (position 0))
     (dotimes (index count next-song-name)
       (let* ((block (nth index songs-list))
              (song (cdr block))
              (song-name (slot-value song 'name)))
-        (if (and (equal song-name current-playing)
+        (if (and (equal song-name current-playing-song-name)
                  (< index (- count 1)))
-               (setq next-song-name
-                  (slot-value (cdr (nth (+ index 1) songs-list))
-                              'name))
-          (progn (message "No more music in current playlist, playing ")
-                 (setq can-play 0))))))
+            (progn
+              (setq can-play 1)
+              (setq position index)))
+        (setq next-song-name
+                  (slot-value (cdr (nth (+ position 1) songs-list))
+                              'name)))))
   (message next-song-name)
   (if can-play
-    (play-song-by-name next-song-name)))
-
+      (play-song-by-name next-song-name)))
 
 (defun add-to-songslist (song)
   "Add song to songs-list."
@@ -556,6 +581,6 @@
   (interactive)
   (request like-url
            (format-like-args (slot-value
-                              (cdr (assoc current-playing songs-list))
+                              (cdr (assoc (slot-value current-playing-song 'name) songs-list))
                               'song-id)))
   (message "Add to your favorite playlist!"))

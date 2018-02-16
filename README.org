@@ -9,6 +9,7 @@
 - 自动播放本歌单下一首歌曲，如需切歌， =M-x play-next= 可以直接切歌
 - =M-x netease-music-search= 查询歌曲
 - =M-x i-like-it= 收藏歌曲
+- 播放列表自动居中高亮当前播放歌曲
   
 ** 有待完善的功能
 - 查看艺人
@@ -19,7 +20,6 @@
 - 使用Elisp破解而不依赖外部的API服务
 - 新建一个Process而不依赖EMMS
     参考 [[https://github.com/zhengyuli/WangyiMusic][WangyiMusic]] 。
-- 播放列表页面高亮当前播放曲目
 - 查询歌曲使用 popup window 而不占用整个 window
 - 状态栏显示美化：不要显示歌曲链接而显示歌曲名
 
