@@ -20,6 +20,6 @@
 - 使用Elisp破解而不依赖外部的API服务
 - 新建一个Process而不依赖EMMS
     参考 [[https://github.com/zhengyuli/WangyiMusic][WangyiMusic]] 。
-- 查询歌曲使用 popup window 而不占用整个 window
 - 状态栏显示美化：不要显示歌曲链接而显示歌曲名
+- 不再输入用户名，而是直接使用 defcustom 写成配置的形式
 

@@ -1,38 +1,64 @@
+;;; -*- lexical-binding: t; -*-
+
 (require 'json)
 (require 'url)
 (require 'org)
 
+(defgroup netease-music nil
+  "Netease music plugin for Emacs."
+  :prefix "netease-music-"
+  :group 'music
+  :link '(url-link :tag "Github" "https://github.com/nicehiro/netease-music"))
+
+(defclass SONG ()
+  ((name)
+   (artist)
+   (album)
+   (song-id)))
+
+(defclass PLAYLIST ()
+  ((name)
+   (id)
+   (description)
+   (user-id)))
+
+(defclass admin ()
+  ((name)
+   (level)
+   (listenSongs)
+   (description)))
+
+(define-namespace netease-music-
+
+(defcustom username nil
+  "Your netease music username."
+  :type 'string)
+
+(defcustom password nil
+  "Your netease music password."
+  :type 'string)
+
 (defconst buffer-name-search "Search Results"
-  "Popup window buffer's name.")
+  "Search window buffer's name.")
 
 (defvar play-list ()
   "Your Play List.")
-
-(defvar current-playing nil
-  "Your current playing song.")
 
 (defvar current-playing-song (make-instance 'SONG)
   "This is current playing SONG.")
 
 (defun format-current-playing-song (name artist album song-id)
+  "Format current playing song."
   (setf (slot-value current-playing-song 'name) name)
   (setf (slot-value current-playing-song 'artist) artist)
   (setf (slot-value current-playing-song 'album) album)
   (setf (slot-value current-playing-song 'song-id) song-id))
 
-(defun format-user-detail (id)
-  "Initialize user details."
-  (let* ((json (request user-detail-url (format-user-detail-args id))))
-    (setf (slot-value admin-ins 'name) (set-user-nickname json))
-    (setf (slot-value admin-ins 'level) (set-user-level json))
-    (setf (slot-value admin-ins 'listenSongs) (set-user-listenSongs json))
-    (setf (slot-value admin-ins 'description) (set-user-description json))))
-
 (defvar songs-list ()
   "Songs list. A playlist's all songs, and you can add other song into it.")
 
 (defconst api "http://localhost:3000"
-  "API ADDRESS.")
+  "NetEase Music API ADDRESS.")
 
 (defconst login-url "/login/cellphone"
   "Login url pattern.")
@@ -111,12 +137,6 @@
 (defun netease-music-playlist-description (playlist-name)
   (find-playlist-description playlist-name))
 
-(defclass SONG ()
-  ((name)
-   (artist)
-   (album)
-   (song-id)))
-
 (defun set-song-name (tracks)
   "Return song name about this song."
   (cdr (assoc 'name tracks)))
@@ -136,11 +156,7 @@
 
 (defun set-album-name (tracks)
   "Return album name about this song."
-  (let* ((count (length (cdr (assoc 'albun tracks))))
-         (track-name ""))
-    (dotimes (index count track-name)
-      (setq name (cdr (assoc 'name (aref (cdr (assoc 'album tracks)) index))))
-      (setq track-name (concat track-name name)))))
+  (cdr (assoc 'name (assoc 'album tracks))))
 
 (defun format-song-detail (tracks instance)
   "Format SONG instance."
@@ -151,11 +167,6 @@
 
 ;;; Class PLAYLIST start here.
   
-(defclass PLAYLIST ()
-  ((name)
-   (id)
-   (description)
-   (user-id)))
 
 (defun set-playlist-name (json)
   (cdr (assoc 'name json)))
@@ -177,11 +188,6 @@
 
 ;;; User Details Start Here.
 
-(defclass admin ()
-  ((name)
-   (level)
-   (listenSongs)
-   (description)))
 
 (defun set-user-id (json)
   "Return user's id from JSON."
@@ -258,28 +264,28 @@
   "Format request url."
   (url-unhex-string (concat api url args)))
 
-(defun netease-music ()
+(defun start ()
   (interactive)
   (switch-to-buffer "netease-music")
-  (netease-music-mode)
-  (netease-music-init))
+  (mode)
+  (init))
 
-(define-derived-mode netease-music-mode org-mode "netease-music"
+(define-derived-mode mode org-mode "netease-music"
   "Key bindings of netease-music-mode."
-  (evil-define-key 'normal netease-music-mode-map (kbd "RET") 'jump-into)
-  (evil-define-key 'normal netease-music-mode-map (kbd "l") 'i-like-it)
-  (evil-define-key 'normal netease-music-mode-map (kbd "n") 'play-next)
-  (evil-define-key 'normal netease-music-mode-map (kbd "p") 'pause)
+  (evil-define-key 'normal netease-music-mode-map (kbd "RET") 'netease-music-jump-into)
+  (evil-define-key 'normal netease-music-mode-map (kbd "l") 'netease-music-i-like-it)
+  (evil-define-key 'normal netease-music-mode-map (kbd "n") 'netease-music-play-next)
+  (evil-define-key 'normal netease-music-mode-map (kbd "p") 'netease-music-pause)
   (evil-define-key 'normal netease-music-mode-map (kbd "q") 'quit-window))
 
-(defun netease-music-init ()
+(defun init ()
   "Initialize netease music information."
   (setq phone (read-string "Your Phone Number Please: "))
   (setq password (read-string "Your Password: "))
-  (netease-music-login phone password)
+  (login phone password)
   (init-frame))
 
-(defun netease-music-login (username password)
+(defun login (username password)
   "Login netease music."
   (let* ((json (request login-url (format-login-args phone password))))
     (setq user-id (set-user-id json))
@@ -335,7 +341,7 @@
       (push (cons song-name song-ins) songs-list)))
   (setq songs-list (reverse-list songs-list)))
 
-(defun netease-music-search ()
+(defun search ()
   "Search songs. Multiple keywords can be separated by SPC."
   (interactive)
   (setq keywords (read-string "Please input the keywords you want to search: "))
@@ -355,7 +361,7 @@
     (popwin:popup-buffer (get-buffer-create buffer-name-search))
     (switch-to-buffer buffer-name-search)
     (erase-buffer)
-    (netease-music-mode))
+    (mode))
     (insert (format-netease-title "Search Results: "
                                 "Press jump-into to listen the song.\nPress add-to-songslist can add to the songs list."))
     (insert "*** Song List:\n")
@@ -444,7 +450,7 @@
   (get-playlist-detail id)
   (with-current-buffer "netease-music-playlist"
     (erase-buffer)
-    (netease-music-mode)
+    (mode)
     (insert (format-netease-title playlist-name
                                   (find-playlist-description playlist-name)))
     (insert "*** Song List:\n")
@@ -488,13 +494,12 @@
   (get-buffer-create "netease-music-playing")
   (setq song-url (get-song-real-url id))
   (play-song song-url)
-  (setq current-playing song-name)
   (format-current-playing-song song-name artist album id)
   (with-current-buffer "netease-music-playing"
     (erase-buffer)
-    (netease-music-mode)
+    (mode)
     (insert (format-netease-title song-name
-                                  (format "*%s*  *%s*" artist album)))
+                                  (format "Artist: %s  Album: %s" artist album)))
     (insert (get-lyric id))
     (goto-char (point-min)))
   (with-current-buffer "netease-music-playlist"
@@ -506,7 +511,7 @@
   (get-personal-fm)
   (with-current-buffer "netease-music-playlist"
     (erase-buffer)
-    (netease-music-mode)
+    (mode)
     (insert (format-netease-title "私人FM"
                                   "你的私人 FM 听完之后再次请求可以获得新的歌曲"))
     (insert "*** Song List:\n")
@@ -528,18 +533,18 @@
 
 ;;; emms 播放完当前曲目之后自动播放下一首
 ;;; when emms finished current song's play, auto play next song.
-(add-hook 'emms-player-finished-hook 'play-next)
+(add-hook 'emms-player-finished-hook 'netease-music-play-next)
+(add-hook 'emms-player-finished-hook 'netease-music-mode-line-format)
 
 ;;; 这里的函数写的太丑了！！！可是又没有什么好办法现在……
 (defun play-next ()
   "Return next song name in songs-list."
   (interactive)
   (eval-buffer "music.el")
-  (setq current-playing-song-name
-        (slot-value current-playing-song 'name))
-  (setq next-song-name current-playing-song-name)
-  (setq can-play nil)
-  (let* ((count (length songs-list))
+  (let* ((current-playing-song-name (slot-value current-playing-song 'name))
+         (next-song-name current-playing-song-name)
+         (can-play nil)
+         (count (length songs-list))
          (position 0))
     (dotimes (index count next-song-name)
       (let* ((block (nth index songs-list))
@@ -552,10 +557,11 @@
               (setq position index)))
         (setq next-song-name
                   (slot-value (cdr (nth (+ position 1) songs-list))
-                              'name)))))
-  (message next-song-name)
-  (if can-play
-      (play-song-by-name next-song-name)))
+                              'name))))
+    (message next-song-name)
+    (if can-play
+        (play-song-by-name next-song-name))
+    (mode-line-format)))
 
 (defun add-to-songslist (song)
   "Add song to songs-list."
@@ -584,3 +590,7 @@
                               (cdr (assoc (slot-value current-playing-song 'name) songs-list))
                               'song-id)))
   (message "Add to your favorite playlist!"))
+
+(defun mode-line-format ()
+  (setq emms-mode-line-format (slot-value netease-music-current-playing-song 'name))
+  (emms-mode-line-alter-mode-line)))
