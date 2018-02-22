@@ -14,12 +14,11 @@
 ** 有待完善的功能
 - 查看艺人
 
-** 改进
+** 有待改进
 - 重复性代码使用宏精简
 - 将服务器搭到服务器，省得其他用户搭建请求环境
 - 使用Elisp破解而不依赖外部的API服务
 - 新建一个Process而不依赖EMMS
     参考 [[https://github.com/zhengyuli/WangyiMusic][WangyiMusic]] 。
-- 状态栏显示美化：不要显示歌曲链接而显示歌曲名
 - 不再输入用户名，而是直接使用 defcustom 写成配置的形式
 

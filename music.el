@@ -57,7 +57,7 @@
 (defvar songs-list ()
   "Songs list. A playlist's all songs, and you can add other song into it.")
 
-(defconst api "http://localhost:3000"
+(defconst api "http://119.23.207.231:3000"
   "NetEase Music API ADDRESS.")
 
 (defconst login-url "/login/cellphone"
@@ -266,23 +266,39 @@
 
 (defun start ()
   (interactive)
-  (switch-to-buffer "netease-music")
-  (mode)
   (init))
 
 (define-derived-mode mode org-mode "netease-music"
   "Key bindings of netease-music-mode."
-  (evil-define-key 'normal netease-music-mode-map (kbd "RET") 'netease-music-jump-into)
-  (evil-define-key 'normal netease-music-mode-map (kbd "l") 'netease-music-i-like-it)
-  (evil-define-key 'normal netease-music-mode-map (kbd "n") 'netease-music-play-next)
-  (evil-define-key 'normal netease-music-mode-map (kbd "p") 'netease-music-pause)
-  (evil-define-key 'normal netease-music-mode-map (kbd "q") 'quit-window))
+  (evil-define-key
+    'normal
+    netease-music-mode-map
+    (kbd "RET")
+    'netease-music-jump-into)
+  (evil-define-key
+    'normal
+    netease-music-mode-map
+    (kbd "l")
+    'netease-music-i-like-it)
+  (evil-define-key
+    'normal
+    netease-music-mode-map
+    (kbd "n")
+    'netease-music-play-next)
+  (evil-define-key
+    'normal
+    netease-music-mode-map
+    (kbd "p")
+    'netease-music-pause)
+  (evil-define-key
+    'normal
+    netease-music-mode-map
+    (kbd "q")
+    'quit-window))
 
 (defun init ()
   "Initialize netease music information."
-  (setq phone (read-string "Your Phone Number Please: "))
-  (setq password (read-string "Your Password: "))
-  (login phone password)
+  (login netease-music-username netease-music-user-password)
   (init-frame))
 
 (defun login (username password)
@@ -395,6 +411,9 @@
 
 (defun init-frame ()
   "Initial main interface. When you first login netease-music list all your playlist."
+  (interactive)
+  (switch-to-buffer "netease-music")
+  (mode)
   (erase-buffer)
   (insert (format-netease-title "Signature:"
                                 (find-admin-description)))
@@ -594,3 +613,5 @@
 (defun mode-line-format ()
   (setq emms-mode-line-format (slot-value netease-music-current-playing-song 'name))
   (emms-mode-line-alter-mode-line)))
+
+(provide 'music)
