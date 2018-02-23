@@ -412,6 +412,7 @@
 (defun init-frame ()
   "Initial main interface. When you first login netease-music list all your playlist."
   (interactive)
+  (format-user-detail netease-music-user-id)
   (switch-to-buffer "netease-music")
   (mode)
   (erase-buffer)
@@ -423,6 +424,7 @@
 
 (defun play-song (song-url)
   "Use EMMS to play songs."
+  (message song-url)
   (emms-play-url song-url))
 
 (defun play ()
@@ -463,6 +465,7 @@
 
 (defun jump-into-playlist-buffer ()
   "Switch to the playlist buffer whose name is this line's content."
+  (interactive)
   (setq playlist-name (get-current-line-content))
   (setq id (find-playlist-id playlist-name))
   (get-buffer-create "netease-music-playlist")
@@ -502,19 +505,20 @@
 
 (defun jump-into-song-buffer ()
   "Switch to the song's buffer whose name is this line's content."
+  (interactive)
   (setq song-name (get-current-line-content))
   (play-song-by-name song-name))
 
 (defun play-song-by-name (song-name)
   "Play a song by the name."
-  (setq id (find-song-id song-name))
-  (setq album (find-song-album song-name))
-  (setq artist (find-song-artist song-name))
-  (get-buffer-create "netease-music-playing")
-  (setq song-url (get-song-real-url id))
-  (play-song song-url)
-  (format-current-playing-song song-name artist album id)
-  (with-current-buffer "netease-music-playing"
+  (let* ((id (find-song-id song-name))
+         (album (find-song-album song-name))
+         (artist (find-song-artist song-name))
+         (song-url (get-song-real-url id)))
+    (get-buffer-create "netease-music-playing")
+    (play-song song-url)
+    (format-current-playing-song song-name artist album id)
+    (with-current-buffer "netease-music-playing"
     (erase-buffer)
     (mode)
     (insert (format-netease-title song-name
@@ -523,10 +527,11 @@
     (goto-char (point-min)))
   (with-current-buffer "netease-music-playlist"
     (goto-char (point-min))
-    (search-forward (slot-value current-playing-song 'name))))
+    (search-forward (slot-value current-playing-song 'name)))))
 
 (defun jump-into-personal-fm ()
   "Jump into your personal fm songs list."
+  (interactive)
   (get-personal-fm)
   (with-current-buffer "netease-music-playlist"
     (erase-buffer)
@@ -540,15 +545,18 @@
 (defun jump-into ()
   "Jump into next buffer based on this line's content."
   (interactive)
-  (eval-buffer "music.el")
+  ;; (eval-buffer "music.el")
   (let* ((current-buffer-name (buffer-name)))
     (cond ((equal (get-current-line-content) "私人FM")
            (message "私人FM")
            (jump-into-personal-fm))
           ((equal current-buffer-name "netease-music")
+           (message "jump into playlist.")
            (jump-into-playlist-buffer))
           ((equal current-buffer-name "netease-music-playlist")
-           (jump-into-song-buffer)))))
+           (message "jump into song list.")
+           (jump-into-song-buffer)))
+    (netease-music-mode-line-format)))
 
 ;;; emms 播放完当前曲目之后自动播放下一首
 ;;; when emms finished current song's play, auto play next song.
@@ -559,7 +567,7 @@
 (defun play-next ()
   "Return next song name in songs-list."
   (interactive)
-  (eval-buffer "music.el")
+  ;; (eval-buffer "music.el")
   (let* ((current-playing-song-name (slot-value current-playing-song 'name))
          (next-song-name current-playing-song-name)
          (can-play nil)
