@@ -1,4 +1,33 @@
-;;; -*- lexical-binding: t; -*-
+;;; temp.el --- music.el --- netease music library for Emacs  -*- lexical-binding: t; -*-
+
+;; Copyright (C) 2018  hiro方圆
+
+;; Author: hiro方圆 <wfy11235813@gmail.com>
+;; Keywords: tools
+
+;; This program is free software; you can redistribute it and/or modify
+;; it under the terms of the GNU General Public License as published by
+;; the Free Software Foundation, either version 3 of the License, or
+;; (at your option) any later version.
+
+;; This program is distributed in the hope that it will be useful,
+;; but WITHOUT ANY WARRANTY; without even the implied warranty of
+;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+;; GNU General Public License for more details.
+
+;; You should have received a copy of the GNU General Public License
+;; along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+;;; Commentary:
+
+;; netease-music-init-frame Initialize netease-music buffer.
+;; netease-music-jump-into Jump into the playlist. You can use "Enter" too if you use evil.
+;; netease-music-jump-into Play current song. You can use "Enter" too if you use evil.
+;; netease-music-play-next Play next song in this playlist. You can use "n" too if you use evil.
+;; netease-music-search Search songs.
+;; netease-music-i-like-it Collect song to your "favoriate song list".
+
+;;; Code:
 
 (require 'json)
 (require 'url)
@@ -624,3 +653,5 @@
   (emms-mode-line-alter-mode-line)))
 
 (provide 'music)
+;;; music.el ends here
+
