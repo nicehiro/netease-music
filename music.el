@@ -32,6 +32,7 @@
 (require 'json)
 (require 'url)
 (require 'org)
+(require 'emms)
 
 (defgroup netease-music nil
   "Netease music plugin for Emacs."
@@ -85,6 +86,9 @@
 
 (defvar songs-list ()
   "Songs list. A playlist's all songs, and you can add other song into it.")
+
+(defvar search-songs-list ()
+  "Search songs list.")
 
 (defconst api "http://119.23.207.231:3000"
   "NetEase Music API ADDRESS.")
@@ -389,28 +393,27 @@
 (defun search ()
   "Search songs. Multiple keywords can be separated by SPC."
   (interactive)
-  (setq keywords (read-string "Please input the keywords you want to search: "))
-  (setq search-songs ())
-  (let* ((json (request search-url
+  (let* ((keywords (read-string "Please input the keywords you want to search: "))
+         (json (request search-url
                         (format-search-args keywords)))
          (songs (cdr (assoc 'songs (cdr (assoc 'result json)))))
-         (count (length songs)))
-    (dotimes (index count search-songs)
+         (count (length songs))
+         (current-config (current-window-configuration)))
+    (dotimes (index count)
       (let* ((song (get-song-from-tracks songs index))
              (song-name (cdr (assoc 'name song)))
              (song-ins (make-instance 'SONG)))
         (format-song-detail song song-ins)
-        (push (cons song-name song-ins) search-songs)))
-    (setq current-config (current-window-configuration))
+        (push (cons song-name song-ins) search-songs-list)))
     ;;; popup window
     (popwin:popup-buffer (get-buffer-create buffer-name-search))
     (switch-to-buffer buffer-name-search)
     (erase-buffer)
-    (mode))
+    (mode)
     (insert (format-netease-title "Search Results: "
                                 "Press jump-into to listen the song.\nPress add-to-songslist can add to the songs list."))
     (insert "*** Song List:\n")
-    (insert (format-playlist-songs-table search-songs)))
+    (insert (format-playlist-songs-table search-songs-list))))
 
 (defun get-lyric (song-id)
   "Return lyric of current song."
@@ -508,19 +511,19 @@
     (insert (format-playlist-songs-table songs-list))
     (goto-char (point-min))))
 
-(defun find-song-id (song-name)
+(defun find-song-id (song-name lst)
   "Find song's id of current song."
-  (setq song-ins (assoc-default song-name songs-list))
+  (setq song-ins (assoc-default song-name lst))
   (slot-value song-ins 'song-id))
 
-(defun find-song-album (song-name)
+(defun find-song-album (song-name lst)
   "Find song's album of current song."
-  (setq song-ins (assoc-default song-name songs-list))
+  (setq song-ins (assoc-default song-name lst))
   (slot-value song-ins 'album))
 
-(defun find-song-artist (song-name)
+(defun find-song-artist (song-name lst)
   "Find song's artist of current song."
-  (setq song-ins (assoc-default song-name songs-list))
+  (setq song-ins (assoc-default song-name lst))
   (slot-value song-ins 'artist))
 
 (defun find-song-item (item song-name)
@@ -532,17 +535,17 @@
      ,(format "Find %s in song." item)
      (find-song-item ,item song-name)))
 
-(defun jump-into-song-buffer ()
+(defun jump-into-song-buffer (lst)
   "Switch to the song's buffer whose name is this line's content."
   (interactive)
   (let ((song-name (get-current-line-content)))
-    (play-song-by-name song-name)))
+    (play-song-by-name song-name lst)))
 
-(defun play-song-by-name (song-name)
+(defun play-song-by-name (song-name lst)
   "Play a song by the name."
-  (let* ((id (find-song-id song-name))
-         (album (find-song-album song-name))
-         (artist (find-song-artist song-name))
+  (let* ((id (find-song-id song-name lst))
+         (album (find-song-album song-name lst))
+         (artist (find-song-artist song-name lst))
          (song-real-url (get-song-real-url id)))
     (get-buffer-create "netease-music-playing")
     (setq current-playing-song (make-instance 'SONG))
@@ -554,10 +557,12 @@
     (insert (format-netease-title song-name
                                   (format "Artist: %s  Album: %s" artist album)))
     (insert (get-lyric id))
-    (goto-char (point-min)))
+    (goto-char (point-min)))))
+
+(defun move-to-current-song ()
   (with-current-buffer "netease-music-playlist"
     (goto-char (point-min))
-    (search-forward (slot-value current-playing-song 'name)))))
+    (search-forward (slot-value current-playing-song 'name))))
 
 (defun jump-into-personal-fm ()
   "Jump into your personal fm songs list."
@@ -584,13 +589,19 @@
            (message "jump into playlist.")
            (jump-into-playlist-buffer))
           ((equal current-buffer-name "netease-music-playlist")
-           (message "jump into song list.")
-           (jump-into-song-buffer)))
+           (message "jump into song")
+           (jump-into-song-buffer songs-list)
+           (move-to-current-song))
+          ((equal current-buffer-name "Search Results")
+           (message "jump into search-song")
+           (jump-into-song-buffer search-songs-list)))
     (netease-music-mode-line-format)))
 
 ;;; emms 播放完当前曲目之后自动播放下一首
 ;;; when emms finished current song's play, auto play next song.
 (add-hook 'emms-player-finished-hook 'netease-music-play-next)
+
+;; when emms finished current song's play, auto change song's name in mode line.
 (add-hook 'emms-player-finished-hook 'netease-music-mode-line-format)
 
 ;;; 这里的函数写的太丑了！！！可是又没有什么好办法现在……
