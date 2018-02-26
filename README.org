@@ -4,19 +4,24 @@
 If you use melpa, install emms from melpa. But melpa is blocked in China, so please use elpa instead.
 
 1. Download music.el from github and add this file to your load-path.
+   #+BEGIN_SRC elisp
+   (add-to-list 'load-path "your-path-to-music.el")
+   #+END_SRC
 
-2. Get your user id.
-   You need to request this url: http://119.23.207.231:3000/login/cellphone?phone=YOUR-PHONE-NUMBER&password=YOUR-PASSWORD
+2. Get YOUR-USER-ID.
+   You need to request this url: http://119.23.207.231:3000/login/cellphone?phone=YOUR-PHONE-NUMBER&password=YOUR-PASSWORD.
    Replace  YOUR-PHONE-NUMBER and YOUR-PASSWORD.
-   Get id from 'account'.
+
+   Get  YOUR-USER-ID from 'account'. Just like this.
+   [[./images/get_id.png]]
 
 3. Config.
    #+BEGIN_SRC elisp
    (require 'music)
    
-   (setq netease-music-username "17826856902")
+   (setq netease-music-username "YOUR-PHONE-NUMBER")
    
-   (setq netease-music-user-password "w1234567")
+   (setq netease-music-user-password "YOUR-PASSWORD")
    
    (setq netease-music-user-id "YOUR-USER-ID")
    #+END_SRC
@@ -33,8 +38,9 @@ If you use melpa, install emms from melpa. But melpa is blocked in China, so ple
 - =M-x netease-music-i-like-it= Collect song to your "favoriate song list".
   
 ** Functions to be improved 
+
 - Get player's infomation.
 - Use macro to simplification.
-- 使用Elisp破解而不依赖外部的API服务
-- 新建一个Process而不依赖EMMS
+- 使用 Elisp 破解而不依赖外部的 API 服务.
+- 新建一个 Process 而不依赖 EMMS.
     参考 [[https://github.com/zhengyuli/WangyiMusic][WangyiMusic]] 。
