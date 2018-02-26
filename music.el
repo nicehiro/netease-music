@@ -26,7 +26,7 @@
   ((name)
    (level)
    (listenSongs)
-   (description)))
+   (signature)))
 
 (define-namespace netease-music-
 
@@ -44,7 +44,7 @@
 (defvar play-list ()
   "Your Play List.")
 
-(defvar current-playing-song (make-instance 'SONG)
+(defvar current-playing-song ()
   "This is current playing SONG.")
 
 (defun format-current-playing-song (name artist album song-id)
@@ -130,7 +130,7 @@
           (slot-value admin-ins 'name)
           (slot-value admin-ins 'level)
           (slot-value admin-ins 'listenSongs)
-          (slot-value admin-ins 'description)
+          ""
           banner-string
           description))
 
@@ -205,9 +205,9 @@
   "Retutn user's listensongs count."
   (cdr (assoc 'listenSongs json)))
 
-(defun set-user-description (json)
-  "Return user's description. Default is nil."
-  (cdr (assoc 'description (cdr (assoc 'profile json)))))
+(defun set-user-signature (json)
+  "Return user's signature. Default is nil."
+  (cdr (assoc 'signature (cdr (assoc 'profile json)))))
 
 (defun set-user-avatar-url (json)
   "Return user's avatar-url."
@@ -223,7 +223,7 @@
     (setf (slot-value admin-ins 'name) (set-user-nickname json))
     (setf (slot-value admin-ins 'level) (set-user-level json))
     (setf (slot-value admin-ins 'listenSongs) (set-user-listenSongs json))
-    (setf (slot-value admin-ins 'description) (set-user-description json))))
+    (setf (slot-value admin-ins 'signature) (set-user-signature json))))
 
 ;;; User Details Ends Here.
 
@@ -417,7 +417,7 @@
   (mode)
   (erase-buffer)
   (insert (format-netease-title "Signature:"
-                                (find-admin-description)))
+                                (find-admin-signature)))
   (get-playlist)
   (insert "\n*** 歌单列表\n")
   (insert (format-playlist-table play-list)))
@@ -451,8 +451,8 @@
       (setq songs-table (concat songs-table
               (format "%s\n" (car (elt songs index))))))))
 
-(defun find-admin-description ()
-  (slot-value admin-ins 'description))
+(defun find-admin-signature ()
+  (slot-value admin-ins 'signature))
 
 (defun find-playlist-id (playlist-name)
   "Return playlist id from play-list which contains the users' all playlist."
@@ -506,18 +506,19 @@
 (defun jump-into-song-buffer ()
   "Switch to the song's buffer whose name is this line's content."
   (interactive)
-  (setq song-name (get-current-line-content))
-  (play-song-by-name song-name))
+  (let ((song-name (get-current-line-content)))
+    (play-song-by-name song-name)))
 
 (defun play-song-by-name (song-name)
   "Play a song by the name."
   (let* ((id (find-song-id song-name))
          (album (find-song-album song-name))
          (artist (find-song-artist song-name))
-         (song-url (get-song-real-url id)))
+         (song-real-url (get-song-real-url id)))
     (get-buffer-create "netease-music-playing")
-    (play-song song-url)
+    (setq current-playing-song (make-instance 'SONG))
     (format-current-playing-song song-name artist album id)
+    (play-song song-real-url)
     (with-current-buffer "netease-music-playing"
     (erase-buffer)
     (mode)

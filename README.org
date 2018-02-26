@@ -1,24 +1,40 @@
 * NetEase Music Plug for Emacs
-
-** Installnation & Use
-- 安装 EMMS，[[https://binaryify.github.io/NeteaseCloudMusicApi/][网易云API]] 
-- 安装本插件
-- =M-x netease-music= ，输入用户名、密码登录网易云帐号
-- 选到你想要听的歌单， =M-x jump-into= 进入此歌单
-- 选到你想要听的歌曲， =M-x jump-into= 进入此歌曲播放界面
-- 自动播放本歌单下一首歌曲，如需切歌， =M-x play-next= 可以直接切歌
-- =M-x netease-music-search= 查询歌曲
-- =M-x i-like-it= 收藏歌曲
-- 播放列表自动居中高亮当前播放歌曲
   
-** 有待完善的功能
-- 查看艺人
+** Installnation
+If you use melpa, install emms from melpa. But melpa is blocked in China, so please use elpa instead.
 
-** 有待改进
-- 重复性代码使用宏精简
-- 将服务器搭到服务器，省得其他用户搭建请求环境
+1. Download music.el from github and add this file to your load-path.
+
+2. Get your user id.
+   You need to request this url: http://119.23.207.231:3000/login/cellphone?phone=YOUR-PHONE-NUMBER&password=YOUR-PASSWORD
+   Replace  YOUR-PHONE-NUMBER and YOUR-PASSWORD.
+   Get id from 'account'.
+
+3. Config.
+   #+BEGIN_SRC elisp
+   (require 'music)
+   
+   (setq netease-music-username "17826856902")
+   
+   (setq netease-music-user-password "w1234567")
+   
+   (setq netease-music-user-id "YOUR-USER-ID")
+   #+END_SRC
+
+4. Enjoy.
+
+** Useage
+
+- =M-x netease-music-init-frame= Initialize netease-music buffer.
+- =M-x netease-music-jump-into= Jump into the playlist. You can use "Enter" too if you use evil.
+- =M-x netease-music-jump-into= Play current song. You can use "Enter" too if you use evil.
+- =M-x netease-music-play-next= Play next song in this playlist. You can use "n" too if you use evil.
+- =M-x netease-music-search= Search songs.
+- =M-x netease-music-i-like-it= Collect song to your "favoriate song list".
+  
+** Functions to be improved 
+- Get player's infomation.
+- Use macro to simplification.
 - 使用Elisp破解而不依赖外部的API服务
 - 新建一个Process而不依赖EMMS
     参考 [[https://github.com/zhengyuli/WangyiMusic][WangyiMusic]] 。
-- 不再输入用户名，而是直接使用 defcustom 写成配置的形式
-
