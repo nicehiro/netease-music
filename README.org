@@ -15,7 +15,7 @@ If you use melpa, install emms from melpa. But melpa is blocked in China, so ple
    Get  YOUR-USER-ID from 'account'. Just like this.
    [[./images/get_id.png]]
 
-3. Config.
+3. Config. 
    #+BEGIN_SRC elisp
    (require 'music)
    
@@ -44,3 +44,6 @@ If you use melpa, install emms from melpa. But melpa is blocked in China, so ple
 - 使用 Elisp 破解而不依赖外部的 API 服务.
 - 新建一个 Process 而不依赖 EMMS.
     参考 [[https://github.com/zhengyuli/WangyiMusic][WangyiMusic]] 。
+    
+
+thanks!!!
