@@ -123,6 +123,9 @@
 (defconst like-url "/like"
   "I like it url.")
 
+(defconst recommend-url "/recommend/songs"
+  "Recommend songs url.")
+
 (defconst login-args "?phone=%s&password=%s"
  "Login args.")
 
@@ -193,8 +196,7 @@ Argument TRACKS is json string."
   (cdr (assoc 'name (assoc 'album tracks))))
 
 (defun format-song-detail (tracks instance)
-  "Format song INSTANCE.
-Argument TRACKS ."
+  "Format song INSTANCE.  Argument TRACKS is json string."
     (setf (slot-value instance 'name) (set-song-name tracks))
     (setf (slot-value instance 'song-id) (set-song-id tracks))
     (setf (slot-value instance 'artist) (set-artist-name tracks))
@@ -362,29 +364,39 @@ Argument TRACKS ."
   (setq play-list (reverse-list play-list)))
 
 (defun get-playlist-tracks (json)
-  "Get tracks from playlist."
+  "Get tracks from playlist from JSON string."
   (cdr (assoc 'tracks (cdr (assoc 'result json)))))
 
 (defun get-song-from-tracks (json index)
-  "Get song details from tracks in playlist."
+  "Get song details from JSON string."
   (aref json index))
 
 (defun get-playlist-detail (id)
-  "Get playlist's songs."
+  "Get playlist's songs through playlist ID."
   (let* ((json (request playlist-detail-url
                         (format-playlist-detail-args id)))
          (tracks (get-playlist-tracks json)))
-    (setq songs-list ())
-    (dotimes (index (length tracks))
-      (setq song (get-song-from-tracks tracks index))
-      (setq song-name (cdr (assoc 'name song)))
-      (setq song-ins (make-instance 'song))
-      (format-song-detail song song-ins)
+    (get-songs-from-tracks tracks)))
+
+(defun get-recommend-songs ()
+  "Get recommend songs."
+  (let* ((json (request recommend-url ""))
+         (tracks (cdr (assoc 'recommend json))))
+    (get-songs-from-tracks tracks)))
+
+(defun get-songs-from-tracks (tracks)
+  "Get songs from TRACKS."
+  (setq songs-list ())
+  (dotimes (index (length tracks))
+    (let* ((song-json (get-song-from-tracks tracks index))
+           (song-name (cdr (assoc 'name song-json)))
+           (song-ins (make-instance 'song)))
+      (format-song-detail song-json song-ins)
       (push (cons song-name song-ins) songs-list)))
   (setq songs-list (reverse-list songs-list)))
 
 (defun search ()
-  "Search songs. Multiple keywords can be separated by SPC."
+  "Search songs.  Multiple keywords can be separated by SPC."
   (interactive)
   (let* ((keywords (read-string "Please input the keywords you want to search: "))
          (json (request search-url
@@ -417,7 +429,7 @@ Argument TRACKS ."
     lyric))
 
 (defun get-song-real-url (id)
-  "Return song's real url."
+  "Return song's real url by song's ID."
   (let* ((json (request song-url
                         (format-song-args id))))
     (cdr (assoc 'url (aref (cdr (assoc 'data json)) 0)))))
@@ -448,7 +460,7 @@ Argument TRACKS ."
   (insert (format-playlist-table play-list)))
 
 (defun play-song (song-url)
-  "Use EMMS to play songs."
+  "Use EMMS to play song."
   (message song-url)
   (emms-play-url song-url))
 
@@ -520,13 +532,15 @@ Argument TRACKS ."
   (slot-value song-ins 'artist))
 
 (defun jump-into-song-buffer (lst)
-  "Switch to the song's buffer whose name is this line's content."
+  "Switch to the song's buffer whose name is this line's content.
+Argument LST: play this song from LST."
   (interactive)
   (let ((song-name (get-current-line-content)))
     (play-song-by-name song-name lst)))
 
 (defun play-song-by-name (song-name lst)
-  "Play a song by the name."
+  "Play a song by the SONG-NAME.
+Argument LST: play this song from LST."
   (let* ((id (find-song-id song-name lst))
          (album (find-song-album song-name lst))
          (artist (find-song-artist song-name lst))
@@ -544,6 +558,7 @@ Argument TRACKS ."
     (goto-char (point-min)))))
 
 (defun move-to-current-song ()
+  "Move to current playing song's position."
   (with-current-buffer "netease-music-playlist"
     (goto-char (point-min))
     (search-forward (slot-value current-playing-song 'name))))
@@ -558,6 +573,20 @@ Argument TRACKS ."
     (insert (format-netease-title "私人FM"
                                   "你的私人 FM 听完之后再次请求可以获得新的歌曲"))
     (insert "*** Song List:\n")
+    (insert (format-playlist-songs-table songs-list))
+    (goto-char (point-min))))
+
+(defun jump-into-recommend-songs-playlist ()
+  "Switch to the recommend songs playlist buffer."
+  (interactive)
+  (get-buffer-create "netease-music-playlist")
+  (get-recommend-songs)
+  (with-current-buffer "netease-music-playlist"
+    (erase-buffer)
+    (mode)
+    (insert (format-netease-title "每日推荐"
+                                  "网易云音乐精选每日推荐歌曲"))
+    (insert "*** Recommend Songs List:\n")
     (insert (format-playlist-songs-table songs-list))
     (goto-char (point-min))))
 
@@ -612,11 +641,11 @@ Argument TRACKS ."
         (play-song-by-name next-song-name netease-music-songs-list))
     (mode-line-format)))
 
-(defun add-to-songslist (song)
-  "Add song to songs-list."
+(defun add-to-songslist (song-ins)
+  "Add SONG-INS to songs-list."
   (interactive)
-  (let ((name (slot-value song 'name)))
-    (push (cons name song) songs-list)))
+  (let ((name (slot-value song-ins 'name)))
+    (push (cons name song-ins) songs-list)))
 
 (defun get-current-line-content ()
   "Return current line's content."
@@ -625,7 +654,7 @@ Argument TRACKS ."
         "\n")))
 
 (defun reverse-list (lst)
-  "Reverse list."
+  "Reverse LST."
   (do ((a lst b)
        (b (cdr lst) (cdr b))
        (c nil a))
@@ -633,6 +662,7 @@ Argument TRACKS ."
     (rplacd a c)))
 
 (defun i-like-it ()
+  "You can add it to your favoriate songs' list if you like it."
   (interactive)
   (request like-url
            (format-like-args (slot-value
@@ -641,6 +671,7 @@ Argument TRACKS ."
   (message "Add to your favorite playlist!"))
 
 (defun mode-line-format ()
+  "Set emms mode line."
   (setq emms-mode-line-format (slot-value netease-music-current-playing-song 'name))
   (emms-mode-line-alter-mode-line)))
 
