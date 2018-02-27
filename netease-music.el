@@ -1,4 +1,4 @@
-;;; temp.el --- music.el --- netease music library for Emacs  -*- lexical-binding: t; -*-
+;;; netease-music.el --- netease music library for Emacs  -*- lexical-binding: t; -*-
 
 ;; Copyright (C) 2018  hiro方圆
 
@@ -33,7 +33,6 @@
 (require 'url)
 (require 'org)
 (require 'emms)
-(require 'evil)
 
 (defgroup netease-music nil
   "Netease music plugin for Emacs."
@@ -41,13 +40,16 @@
   :group 'music
   :link '(url-link :tag "Github" "https://github.com/nicehiro/netease-music"))
 
-(defclass SONG ()
+
+(define-namespace netease-music-
+
+(defclass song ()
   ((name)
    (artist)
    (album)
    (song-id)))
 
-(defclass PLAYLIST ()
+(defclass playlist ()
   ((name)
    (id)
    (description)
@@ -58,8 +60,6 @@
    (level)
    (listenSongs)
    (signature)))
-
-(define-namespace netease-music-
 
 (defcustom username nil
   "Your netease music username."
@@ -76,7 +76,7 @@
   "Your Play List.")
 
 (defvar current-playing-song ()
-  "This is current playing SONG.")
+  "This is current playing song.")
 
 (defun format-current-playing-song (name artist album song-id)
   "Format current playing song."
@@ -184,23 +184,19 @@
   (let* ((count (length (cdr (assoc 'artists tracks))))
          (artist-name ""))
     (dotimes (index count artist-name)
-      (setq name (cdr (assoc 'name (aref (cdr (assoc 'artists tracks)) index))))
-      (message name)
-      (setq artist-name (concat name "  " artist-name)))))
+      (let ((name (cdr (assoc 'name (aref (cdr (assoc 'artists tracks)) index)))))
+        (setq artist-name (concat name "  " artist-name))))))
 
 (defun set-album-name (tracks)
   "Return album name about this song."
   (cdr (assoc 'name (assoc 'album tracks))))
 
 (defun format-song-detail (tracks instance)
-  "Format SONG instance."
+  "Format song instance."
     (setf (slot-value instance 'name) (set-song-name tracks))
     (setf (slot-value instance 'song-id) (set-song-id tracks))
     (setf (slot-value instance 'artist) (set-artist-name tracks))
     (setf (slot-value instance 'album) (set-album-name tracks)))
-
-;;; Class PLAYLIST start here.
-  
 
 (defun set-playlist-name (json)
   (cdr (assoc 'name json)))
@@ -219,9 +215,6 @@
     (setf (slot-value instance 'name) (set-playlist-name json))
     (setf (slot-value instance 'description) (set-playlist-description json))
     (setf (slot-value instance 'id) id))
-
-;;; User Details Start Here.
-
 
 (defun set-user-id (json)
   "Return user's id from JSON."
@@ -362,7 +355,7 @@
     (setq play-list ())
     (dotimes (i (length detail))
       (let* ((lst (aref detail i))
-             (playlist-ins (make-instance 'PLAYLIST))
+             (playlist-ins (make-instance 'playlist))
              (list-id (cdr (assoc 'id lst)))
              (name (cdr (assoc 'name lst))))
         (format-playlist-detail playlist-ins lst list-id)
@@ -386,7 +379,7 @@
     (dotimes (index (length tracks))
       (setq song (get-song-from-tracks tracks index))
       (setq song-name (cdr (assoc 'name song)))
-      (setq song-ins (make-instance 'SONG))
+      (setq song-ins (make-instance 'song))
       (format-song-detail song song-ins)
       (push (cons song-name song-ins) songs-list)))
   (setq songs-list (reverse-list songs-list)))
@@ -403,7 +396,7 @@
     (dotimes (index count)
       (let* ((song (get-song-from-tracks songs index))
              (song-name (cdr (assoc 'name song)))
-             (song-ins (make-instance 'SONG)))
+             (song-ins (make-instance 'song)))
         (format-song-detail song song-ins)
         (push (cons song-name song-ins) search-songs-list)))
     ;;; popup window
@@ -438,7 +431,7 @@
     (dotimes (index (length data))
       (setq song (aref data index))
       (setq song-name (cdr (assoc 'name song)))
-      (setq song-ins (make-instance 'SONG))
+      (setq song-ins (make-instance 'song))
       (format-song-detail song song-ins)
       (push (cons song-name song-ins) songs-list))))
 
@@ -540,7 +533,7 @@
          (artist (find-song-artist song-name lst))
          (song-real-url (get-song-real-url id)))
     (get-buffer-create "netease-music-playing")
-    (setq current-playing-song (make-instance 'SONG))
+    (setq current-playing-song (make-instance 'song))
     (format-current-playing-song song-name artist album id)
     (play-song song-real-url)
     (with-current-buffer "netease-music-playing"
@@ -652,6 +645,6 @@
   (setq emms-mode-line-format (slot-value netease-music-current-playing-song 'name))
   (emms-mode-line-alter-mode-line)))
 
-(provide 'music)
+(provide 'netease-music)
 ;;; music.el ends here
 
