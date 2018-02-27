@@ -21,9 +21,9 @@
 ;;; Commentary:
 
 ;; netease-music-init-frame Initialize netease-music buffer.
-;; netease-music-jump-into Jump into the playlist. You can use "Enter" too if you use evil.
-;; netease-music-jump-into Play current song. You can use "Enter" too if you use evil.
-;; netease-music-play-next Play next song in this playlist. You can use "n" too if you use evil.
+;; netease-music-jump-into Jump into the playlist.  You can use "Enter" too if you use evil.
+;; netease-music-jump-into Play current song.  You can use "Enter" too if you use evil.
+;; netease-music-play-next Play next song in this playlist.  You can use "n" too if you use evil.
 ;; netease-music-search Search songs.
 ;; netease-music-i-like-it Collect song to your "favoriate song list".
 
@@ -32,7 +32,6 @@
 (require 'json)
 (require 'url)
 (require 'org)
-(require 'emms)
 
 (defgroup netease-music nil
   "Netease music plugin for Emacs."
@@ -79,14 +78,14 @@
   "This is current playing song.")
 
 (defun format-current-playing-song (name artist album song-id)
-  "Format current playing song."
+  "Format current playing song with song's NAME, ARTIST, ALBUM and SONG-ID."
   (setf (slot-value current-playing-song 'name) name)
   (setf (slot-value current-playing-song 'artist) artist)
   (setf (slot-value current-playing-song 'album) album)
   (setf (slot-value current-playing-song 'song-id) song-id))
 
 (defvar songs-list ()
-  "Songs list. A playlist's all songs, and you can add other song into it.")
+  "Songs list.  A playlist's all songs, and you can add other song into it.")
 
 (defvar search-songs-list ()
   "Search songs list.")
@@ -101,7 +100,7 @@
   "Playlist url pattern.")
 
 (defconst playlist-detail-url "/playlist/detail"
-  "playlist detail url pattern.")
+  "Playlist detail url pattern.")
 
 (defconst user-detail-url "/user/detail"
   "User detail url pattern.")
@@ -149,17 +148,18 @@
   "I like it args.")
 
 (defun format-lyric-args (song-id)
-  "Format lyric args."
+  "Format lyric args with SONG-ID."
   (format lyric-args song-id))
 
 (defun format-like-args (song-id)
+  "Format like-args with SONG-ID."
   (format like-args song-id))
 
 (defconst netease-music-title
   "* NetEase Music\n %s  等级：%s 听歌数：%s \n私人FM\n%s \n** %s \n%s \n")
 
 (defun format-netease-title (banner-string description)
-  "Format netease title."
+  "Format netease title with BANNER-STRING & DESCRIPTION."
   (format netease-music-title
           (slot-value admin-ins 'name)
           (slot-value admin-ins 'level)
@@ -168,19 +168,19 @@
           banner-string
           description))
 
-(defun netease-music-playlist-description (playlist-name)
-  (find-playlist-description playlist-name))
-
 (defun set-song-name (tracks)
-  "Return song name about this song."
+  "Return song name about this song.
+Argument TRACKS is json string."
   (cdr (assoc 'name tracks)))
 
 (defun set-song-id (tracks)
-  "Return song id about this song."
+  "Return song id about this song.
+Argument TRACKS is json string."
   (cdr (assoc 'id tracks)))
 
 (defun set-artist-name (tracks)
-  "Return artist name about this song."
+  "Return artist name about this song.
+Argument TRACKS is json string."
   (let* ((count (length (cdr (assoc 'artists tracks))))
          (artist-name ""))
     (dotimes (index count artist-name)
@@ -188,29 +188,35 @@
         (setq artist-name (concat name "  " artist-name))))))
 
 (defun set-album-name (tracks)
-  "Return album name about this song."
+  "Return album name about this song.
+Argument TRACKS is json string."
   (cdr (assoc 'name (assoc 'album tracks))))
 
 (defun format-song-detail (tracks instance)
-  "Format song instance."
+  "Format song INSTANCE.
+Argument TRACKS ."
     (setf (slot-value instance 'name) (set-song-name tracks))
     (setf (slot-value instance 'song-id) (set-song-id tracks))
     (setf (slot-value instance 'artist) (set-artist-name tracks))
     (setf (slot-value instance 'album) (set-album-name tracks)))
 
 (defun set-playlist-name (json)
+  "Return playlist name from JSON string."
   (cdr (assoc 'name json)))
 
 (defun set-playlist-description (json)
+  "Return playlist description from JSON string."
   (let ((description (cdr (assoc 'description json))))
     (if (equal description nil)
         "暂无歌单简介"
       description)))
 
 (defun set-playlist-userid (json)
+  "Return playlist user-id from JSON string."
   (cdr (assoc 'userId json)))
 
 (defun format-playlist-detail (instance json id)
+  "Format playlist INSTANCE with JSON string and playlist ID."
     (setf (slot-value instance 'user-id) (set-playlist-userid json))
     (setf (slot-value instance 'name) (set-playlist-name json))
     (setf (slot-value instance 'description) (set-playlist-description json))
@@ -221,61 +227,58 @@
   (cdr (assoc 'id (cdr (assoc 'account json)))))
 
 (defun set-user-nickname (json)
-  "Return user's nickname."
+  "Return user nickname from JSON string."
   (cdr (assoc 'nickname (cdr (assoc 'profile json)))))
 
 (defun set-user-level (json)
-  "Return user's netease-music level."
+  "Return user netease-music level from JSON string."
   (cdr (assoc 'level json)))
 
 (defun set-user-listenSongs (json)
-  "Retutn user's listensongs count."
+  "Retutn user listensongs count from JSON string."
   (cdr (assoc 'listenSongs json)))
 
 (defun set-user-signature (json)
-  "Return user's signature. Default is nil."
+  "Return user signature from JSON.  Default is nil."
   (cdr (assoc 'signature (cdr (assoc 'profile json)))))
 
 (defun set-user-avatar-url (json)
-  "Return user's avatar-url."
+  "Return user avatar-url from JSON."
   (cdr (assoc 'avatarUrl (cdr (assoc 'profile json)))))
 
-(defvar admin-ins
-  (make-instance 'admin)
+(defvar admin-ins (make-instance 'admin)
   "When you login will create a user instance.")
 
 (defun format-user-detail (id)
-  "Initialize user details."
+  "Initialize user details with user ID."
   (let* ((json (request user-detail-url (format-user-detail-args id))))
     (setf (slot-value admin-ins 'name) (set-user-nickname json))
     (setf (slot-value admin-ins 'level) (set-user-level json))
     (setf (slot-value admin-ins 'listenSongs) (set-user-listenSongs json))
     (setf (slot-value admin-ins 'signature) (set-user-signature json))))
 
-;;; User Details Ends Here.
-
 (defun format-login-args (phone password)
-  "Format login args."
+  "Format login args with PHONE and PASSWORD."
   (format login-args phone password))
 
-(defun format-user-detail-args (uid)
-  "Format user detail args."
-  (format user-detail-args uid))
+(defun format-user-detail-args (id)
+  "Format user detail args with user ID."
+  (format user-detail-args id))
 
-(defun format-playlist-args (uid)
-  "Format playlist args."
-  (format playlist-args uid))
+(defun format-playlist-args (id)
+  "Format playlist args with user ID."
+  (format playlist-args id))
 
 (defun format-playlist-detail-args (id)
-  "Format playlist detail args."
+  "Format playlist detail args with playlist ID."
   (format playlist-detail-args id))
 
 (defun format-song-args (id)
-  "Format song args."
+  "Format song args with song ID."
   (format song-args id))
 
 (defun format-search-args (keyword)
-  "Format search args."
+  "Format search args with search KEYWORD."
   (format search-args keyword))
 
 (defvar user-id nil
@@ -288,12 +291,8 @@
   "User avatar url.")
 
 (defun format-request-url (url args)
-  "Format request url."
+  "Format request url with URL pattern and ARGS."
   (url-unhex-string (concat api url args)))
-
-(defun start ()
-  (interactive)
-  (init))
 
 (define-derived-mode mode org-mode "netease-music"
   "Key bindings of netease-music-mode."
@@ -325,17 +324,17 @@
 
 (defun init ()
   "Initialize netease music information."
-  (login netease-music-username netease-music-user-password)
+  (login username user-password)
   (init-frame))
 
 (defun login (username password)
-  "Login netease music."
-  (let* ((json (request login-url (format-login-args phone password))))
+  "Login netease music with user USERNAME and PASSWORD."
+  (let* ((json (request login-url (format-login-args username password))))
     (setq user-id (set-user-id json))
     (format-user-detail user-id)))
 
 (defun request (url-pattern args)
-  "Return json by request the url."
+  "Return json by requesting the url."
   (let (json)
     (with-current-buffer (url-retrieve-synchronously
                           (format-request-url url-pattern args))
@@ -436,7 +435,7 @@
       (push (cons song-name song-ins) songs-list))))
 
 (defun init-frame ()
-  "Initial main interface. When you first login netease-music list all your playlist."
+  "Initial main interface.  When you first login netease-music list all your playlist."
   (interactive)
   (format-user-detail netease-music-user-id)
   (switch-to-buffer "netease-music")
@@ -464,7 +463,7 @@
   (emms-stop))
 
 (defun format-playlist-table (playlist)
-  "Format the user's all playlist."
+  "Format the user's all PLAYLIST."
   (let ((playlist-table ""))
     (dotimes (index (safe-length playlist) playlist-table)
       (setq playlist-table (concat playlist-table
@@ -598,8 +597,8 @@
          (position 0))
     (dotimes (index count next-song-name)
       (let* ((block (nth index songs-list))
-             (song (cdr block))
-             (song-name (slot-value song 'name)))
+             (song-ins (cdr block))
+             (song-name (slot-value song-ins 'name)))
         (if (and (equal song-name current-playing-song-name)
                  (< index (- count 1)))
             (progn
@@ -610,7 +609,7 @@
                               'name))))
     (message next-song-name)
     (if can-play
-        (play-song-by-name next-song-name))
+        (play-song-by-name next-song-name netease-music-songs-list))
     (mode-line-format)))
 
 (defun add-to-songslist (song)
@@ -646,5 +645,5 @@
   (emms-mode-line-alter-mode-line)))
 
 (provide 'netease-music)
-;;; music.el ends here
+;;; netease-music.el ends here
 
