@@ -1,21 +1,21 @@
-* NetEase Music Plug for Emacs
+* NetEase Music Library for Emacs
   
 ** Installnation
-If you use melpa, install emms from melpa. But melpa is blocked in China, so please use elpa instead.
+1. If you use melpa, install emms from melpa. But melpa is blocked in China, so please use elpa instead.
 
-1. Download music.el from github and add this file to your load-path.
+2. Download music.el from github and add this file to your load-path.
    #+BEGIN_SRC elisp
    (add-to-list 'load-path "your-path-to-music.el")
    #+END_SRC
 
-2. Get YOUR-USER-ID.
+3. Get YOUR-USER-ID.
    You need to request this url: http://119.23.207.231:3000/login/cellphone?phone=YOUR-PHONE-NUMBER&password=YOUR-PASSWORD.
-   Replace  YOUR-PHONE-NUMBER and YOUR-PASSWORD.
+   Replace YOUR-PHONE-NUMBER with your real phone number(China) and YOUR-PASSWORD with your real password.
 
    Get  YOUR-USER-ID from 'account'. Just like this.
    [[./images/get_id.png]]
 
-3. Config. 
+4. Config. 
    #+BEGIN_SRC elisp
    (require 'music)
    
@@ -26,7 +26,7 @@ If you use melpa, install emms from melpa. But melpa is blocked in China, so ple
    (setq netease-music-user-id "YOUR-USER-ID")
    #+END_SRC
 
-4. Enjoy.
+5. Enjoy.
 
 ** Useage
 
@@ -41,9 +41,4 @@ If you use melpa, install emms from melpa. But melpa is blocked in China, so ple
 
 - Get player's infomation.
 - Use macro to simplification.
-- 使用 Elisp 破解而不依赖外部的 API 服务.
-- 新建一个 Process 而不依赖 EMMS.
-    参考 [[https://github.com/zhengyuli/WangyiMusic][WangyiMusic]] 。
-    
 
-thanks!!!

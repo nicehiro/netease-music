@@ -33,6 +33,7 @@
 (require 'url)
 (require 'org)
 (require 'emms)
+(require 'evil)
 
 (defgroup netease-music nil
   "Netease music plugin for Emacs."
@@ -526,15 +527,6 @@
   (setq song-ins (assoc-default song-name lst))
   (slot-value song-ins 'artist))
 
-(defun find-song-item (item song-name)
-  (setq song-ins (assoc-default song-name songs-list))
-  (slot-value song-ins 'item))
-
-(defmacro find-song (item)
-  `(defun ,(intern (format "find-song-%s" item)) ()
-     ,(format "Find %s in song." item)
-     (find-song-item ,item song-name)))
-
 (defun jump-into-song-buffer (lst)
   "Switch to the song's buffer whose name is this line's content."
   (interactive)
@@ -597,18 +589,15 @@
            (jump-into-song-buffer search-songs-list)))
     (netease-music-mode-line-format)))
 
-;;; emms 播放完当前曲目之后自动播放下一首
 ;;; when emms finished current song's play, auto play next song.
 (add-hook 'emms-player-finished-hook 'netease-music-play-next)
 
 ;; when emms finished current song's play, auto change song's name in mode line.
 (add-hook 'emms-player-finished-hook 'netease-music-mode-line-format)
 
-;;; 这里的函数写的太丑了！！！可是又没有什么好办法现在……
 (defun play-next ()
   "Return next song name in songs-list."
   (interactive)
-  ;; (eval-buffer "music.el")
   (let* ((current-playing-song-name (slot-value current-playing-song 'name))
          (next-song-name current-playing-song-name)
          (can-play nil)
