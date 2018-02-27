@@ -27,6 +27,7 @@
    #+END_SRC
 
 5. Enjoy.
+
    [[./images/show.gif]]
 
 ** Useage
