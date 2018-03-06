@@ -29,6 +29,10 @@
 5. Enjoy.
 
    [[./images/show.gif]]
+   
+6. Improve sound quality.
+   
+   When I listen songs in my machine, the sound quality was so bad, and I knew the song's quality was perfect. So if you have the same problem, you can install [[https://mpv.io/][mpv]] and [[https://github.com/dochang/emms-player-mpv][emms-player-mpv]]. Use mpv to play songs.
 
 ** Useage
 
@@ -38,6 +42,10 @@
 - =M-x netease-music-play-next= Play next song in this playlist. You can use "n" too if you use evil.
 - =M-x netease-music-search= Search songs.
 - =M-x netease-music-i-like-it= Collect song to your "favoriate song list".
+  
+** Thanks
+
+[[https://github.com/Binaryify/NeteaseCloudMusicApi][Binaryify's NeteaseCloudMusicApi.]]
   
 ** Functions to be improved 
 

@@ -126,8 +126,11 @@
 (defconst recommend-url "/recommend/songs"
   "Recommend songs url.")
 
+(defconst artist-details-url "/artist"
+  "Artist details url.")
+
 (defconst login-args "?phone=%s&password=%s"
- "Login args.")
+  "Login args.")
 
 (defconst user-detail-args "?uid=%s"
   "User detail args.")
@@ -149,6 +152,13 @@
 
 (defconst like-args "?id=%s"
   "I like it args.")
+
+(defconst artist-details-args "?id=%s"
+  "Artist details args.")
+
+(defun format-artist-details-args (artist-id)
+  "Format artist-details-args with ARTIST-ID."
+  (format artist-details-args artist-id))
 
 (defun format-lyric-args (song-id)
   "Format lyric args with SONG-ID."
@@ -440,11 +450,11 @@ Argument TRACKS is json string."
          (data (cdr (assoc 'data json))))
     (setq songs-list ())
     (dotimes (index (length data))
-      (setq song (aref data index))
-      (setq song-name (cdr (assoc 'name song)))
-      (setq song-ins (make-instance 'song))
-      (format-song-detail song song-ins)
-      (push (cons song-name song-ins) songs-list))))
+      (let* ((song-json (aref data index))
+             (song-name (cdr (assoc 'name song-json)))
+             (song-ins (make-instance 'song)))
+        (format-song-detail song-json song-ins)
+        (push (cons song-name song-ins) songs-list)))))
 
 (defun init-frame ()
   "Initial main interface.  When you first login netease-music list all your playlist."
@@ -639,7 +649,8 @@ Argument LST: play this song from LST."
     (message next-song-name)
     (if can-play
         (play-song-by-name next-song-name netease-music-songs-list))
-    (mode-line-format)))
+    (mode-line-format)
+    (move-to-current-song)))
 
 (defun add-to-songslist (song-ins)
   "Add SONG-INS to songs-list."
