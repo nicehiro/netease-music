@@ -20,6 +20,7 @@
 
 ;;; Commentary:
 
+;; This library was developed for Chinese streaming music - Netease cloud music.
 ;; netease-music-init-frame Initialize netease-music buffer.
 ;; netease-music-jump-into Jump into the playlist.  You can use "Enter" too if you use evil.
 ;; netease-music-jump-into Play current song.  You can use "Enter" too if you use evil.
@@ -46,7 +47,8 @@
   ((name)
    (artist)
    (album)
-   (song-id)))
+   (song-id)
+   (artist-id)))
 
 (defclass playlist ()
   ((name)
@@ -77,12 +79,13 @@
 (defvar current-playing-song ()
   "This is current playing song.")
 
-(defun format-current-playing-song (name artist album song-id)
+(defun format-current-playing-song (name artist album song-id artist-id)
   "Format current playing song with song's NAME, ARTIST, ALBUM and SONG-ID."
   (setf (slot-value current-playing-song 'name) name)
   (setf (slot-value current-playing-song 'artist) artist)
   (setf (slot-value current-playing-song 'album) album)
-  (setf (slot-value current-playing-song 'song-id) song-id))
+  (setf (slot-value current-playing-song 'song-id) song-id)
+  (setf (slot-value current-playing-song 'artist-id) artist-id))
 
 (defvar songs-list ()
   "Songs list.  A playlist's all songs, and you can add other song into it.")
@@ -126,7 +129,7 @@
 (defconst recommend-url "/recommend/songs"
   "Recommend songs url.")
 
-(defconst artist-details-url "/artist"
+(defconst artist-details-url "/artists"
   "Artist details url.")
 
 (defconst login-args "?phone=%s&password=%s"
@@ -205,12 +208,20 @@ Argument TRACKS is json string."
 Argument TRACKS is json string."
   (cdr (assoc 'name (assoc 'album tracks))))
 
+(defun set-artist-id (tracks)
+  "Return artist id about this song.
+Argument TRACKS is json string."
+  (let* ((count (length (cdr (assoc 'artists tracks))))
+         (artist-id (cdr (assoc 'id (aref (cdr (assoc 'artists tracks)) 0)))))
+    artist-id))
+
 (defun format-song-detail (tracks instance)
   "Format song INSTANCE.  Argument TRACKS is json string."
-    (setf (slot-value instance 'name) (set-song-name tracks))
-    (setf (slot-value instance 'song-id) (set-song-id tracks))
-    (setf (slot-value instance 'artist) (set-artist-name tracks))
-    (setf (slot-value instance 'album) (set-album-name tracks)))
+  (setf (slot-value instance 'name) (set-song-name tracks))
+  (setf (slot-value instance 'song-id) (set-song-id tracks))
+  (setf (slot-value instance 'artist) (set-artist-name tracks))
+  (setf (slot-value instance 'album) (set-album-name tracks))
+  (setf (slot-value instance 'artist-id) (set-artist-id tracks)))
 
 (defun set-playlist-name (json)
   "Return playlist name from JSON string."
@@ -229,10 +240,10 @@ Argument TRACKS is json string."
 
 (defun format-playlist-detail (instance json id)
   "Format playlist INSTANCE with JSON string and playlist ID."
-    (setf (slot-value instance 'user-id) (set-playlist-userid json))
-    (setf (slot-value instance 'name) (set-playlist-name json))
-    (setf (slot-value instance 'description) (set-playlist-description json))
-    (setf (slot-value instance 'id) id))
+  (setf (slot-value instance 'user-id) (set-playlist-userid json))
+  (setf (slot-value instance 'name) (set-playlist-name json))
+  (setf (slot-value instance 'description) (set-playlist-description json))
+  (setf (slot-value instance 'id) id))
 
 (defun set-user-id (json)
   "Return user's id from JSON."
@@ -420,18 +431,55 @@ Argument TRACKS is json string."
              (song-ins (make-instance 'song)))
         (format-song-detail song song-ins)
         (push (cons song-name song-ins) search-songs-list)))
+    (setq search-songs-list (reverse-list search-songs-list))
     ;;; popup window
     (popwin:popup-buffer (get-buffer-create buffer-name-search))
     (switch-to-buffer buffer-name-search)
     (erase-buffer)
     (mode)
     (insert (format-netease-title "Search Results: "
-                                "Press jump-into to listen the song.\nPress add-to-songslist can add to the songs list."))
+                                  "Press jump-into to listen the song.\nPress add-to-songslist can add to the songs list."))
     (insert "*** Song List:\n")
     (insert (format-playlist-songs-table search-songs-list))))
 
+(defun get-current-playing-artist-songs ()
+  "Get current playing song's artist information."
+  (interactive)
+  (let* ((artist-id (slot-value current-playing-song 'artist-id))
+         (json (request artist-details-url
+                        (format-artist-details-args artist-id)))
+         (artist-name (cdr (assoc 'name (cdr (assoc 'artist json)))))
+         (briefDesc (cdr (assoc 'briefDesc (cdr (assoc 'artist json)))))
+         (hot-songs (cdr (assoc 'hotSongs json)))
+         (count (length hot-songs))
+         (current-config (current-window-configuration)))
+    (dotimes (index count)
+      (let* ((song-json (get-song-from-tracks hot-songs index))
+             (song-name (cdr (assoc 'name song-json)))
+             (song-ins (make-instance 'song)))
+        (setf (slot-value song-ins 'name) (cdr (assoc 'name song-json)))
+        (setf (slot-value song-ins 'artist)
+              (cdr (assoc 'id
+                          (aref (cdr (assoc 'ar song-json)) 0))))
+        (setf (slot-value song-ins 'album)
+              (cdr (assoc 'name
+                          (cdr (assoc 'al song-json)))))
+        (setf (slot-value song-ins 'song-id) (cdr (assoc 'id song-json)))
+        (setf (slot-value song-ins 'artist-id)
+              (cdr (assoc 'id
+                          (aref (cdr (assoc 'ar song-json)) 0))))
+        (push (cons song-name song-ins) search-songs-list)))
+    (popwin:popup-buffer (get-buffer-create buffer-name-search))
+    (switch-to-buffer buffer-name-search)
+    (erase-buffer)
+    (mode)
+    (insert (format-netease-title "Artist Description"
+                                  briefDesc))
+    (insert "*** Artist Best 50 Songs !")
+    (insert (format-playlist-songs-table search-songs-list))))
+
 (defun get-lyric (song-id)
-  "Return lyric of current song."
+  "Return lyric of current song by SONG-ID."
   (let* ((json (request lyric-url
                         (format-lyric-args song-id)))
          (lrc (cdr (assoc 'lrc json)))
@@ -489,14 +537,14 @@ Argument TRACKS is json string."
   (let ((playlist-table ""))
     (dotimes (index (safe-length playlist) playlist-table)
       (setq playlist-table (concat playlist-table
-              (format "%s\n" (car (elt playlist index))))))))
+                                   (format "%s\n" (car (elt playlist index))))))))
 
 (defun format-playlist-songs-table (songs)
   "Format the playlist's all song."
   (let ((songs-table ""))
     (dotimes (index (safe-length songs) songs-table)
       (setq songs-table (concat songs-table
-              (format "%s\n" (car (elt songs index))))))))
+                                (format "%s\n" (car (elt songs index))))))))
 
 (defun find-admin-signature ()
   (slot-value admin-ins 'signature))
@@ -531,6 +579,10 @@ Argument TRACKS is json string."
   (setq song-ins (assoc-default song-name lst))
   (slot-value song-ins 'song-id))
 
+(defun find-artist-id (song-name lst)
+  (setq song-ins (assoc-default song-name lst))
+  (slot-value song-ins 'artist-id))
+
 (defun find-song-album (song-name lst)
   "Find song's album of current song."
   (setq song-ins (assoc-default song-name lst))
@@ -552,20 +604,21 @@ Argument LST: play this song from LST."
   "Play a song by the SONG-NAME.
 Argument LST: play this song from LST."
   (let* ((id (find-song-id song-name lst))
+         (artist-id (find-artist-id song-name lst))
          (album (find-song-album song-name lst))
          (artist (find-song-artist song-name lst))
          (song-real-url (get-song-real-url id)))
     (get-buffer-create "netease-music-playing")
     (setq current-playing-song (make-instance 'song))
-    (format-current-playing-song song-name artist album id)
+    (format-current-playing-song song-name artist album id artist-id)
     (play-song song-real-url)
     (with-current-buffer "netease-music-playing"
-    (erase-buffer)
-    (mode)
-    (insert (format-netease-title song-name
-                                  (format "Artist: %s  Album: %s" artist album)))
-    (insert (get-lyric id))
-    (goto-char (point-min)))))
+      (erase-buffer)
+      (mode)
+      (insert (format-netease-title song-name
+                                    (format "Artist: %s  Album: %s" artist album)))
+      (insert (get-lyric id))
+      (goto-char (point-min)))))
 
 (defun move-to-current-song ()
   "Move to current playing song's position."
@@ -644,8 +697,8 @@ Argument LST: play this song from LST."
               (setq can-play 1)
               (setq position index)))
         (setq next-song-name
-                  (slot-value (cdr (nth (+ position 1) songs-list))
-                              'name))))
+              (slot-value (cdr (nth (+ position 1) songs-list))
+                          'name))))
     (message next-song-name)
     (if can-play
         (play-song-by-name next-song-name netease-music-songs-list))
@@ -669,7 +722,7 @@ Argument LST: play this song from LST."
   (do ((a lst b)
        (b (cdr lst) (cdr b))
        (c nil a))
-    ((atom a) c)
+      ((atom a) c)
     (rplacd a c)))
 
 (defun i-like-it ()

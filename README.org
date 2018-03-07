@@ -1,11 +1,11 @@
 * NetEase Music Library for Emacs
   
 ** Installnation
-1. If you use melpa, install emms from melpa. But melpa is blocked in China, so please use elpa instead.
+1. If you use melpa, install emms from melpa. But melpa is blocked in China, so please use elpa-emacs-china instead.
 
 2. Download music.el from github and add this file to your load-path.
    #+BEGIN_SRC elisp
-   (add-to-list 'load-path "your-path-to-music.el")
+   (add-to-list 'load-path "your-path-to-netease-music.el")
    #+END_SRC
 
 3. Get YOUR-USER-ID.
@@ -28,7 +28,7 @@
 
 5. Enjoy.
 
-   [[./images/show.gif]]
+   [[https://www.bilibili.com/video/av20083501/?spm_id_from=333.23.home_video_list.1][demo]]
    
 6. Improve sound quality.
    
@@ -42,6 +42,7 @@
 - =M-x netease-music-play-next= Play next song in this playlist. You can use "n" too if you use evil.
 - =M-x netease-music-search= Search songs.
 - =M-x netease-music-i-like-it= Collect song to your "favoriate song list".
+- =M-x netease-music-get-current-playing-artist-songs= Get current playing artist's Best 50 songs.
   
 ** Thanks
 
@@ -51,4 +52,4 @@
 
 - Get player's infomation.
 - Use macro to simplification.
-
+- Play MV.
