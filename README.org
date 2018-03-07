@@ -43,6 +43,7 @@
 - =M-x netease-music-search= Search songs.
 - =M-x netease-music-i-like-it= Collect song to your "favoriate song list".
 - =M-x netease-music-get-current-playing-artist-songs= Get current playing artist's Best 50 songs.
+- =M-x netease-music-get-current-playing-artist-mvs= Get current playing artist's all mvs.
   
 ** Thanks
 
@@ -52,4 +53,3 @@
 
 - Get player's infomation.
 - Use macro to simplification.
-- Play MV.

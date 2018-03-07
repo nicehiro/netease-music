@@ -62,12 +62,23 @@
    (listenSongs)
    (signature)))
 
+(defclass mv ()
+  ((name)
+   (artist-name)
+   (artist-id)
+   (mv-id)
+   (publish-time)))
+
 (defcustom username nil
   "Your netease music username."
   :type 'string)
 
 (defcustom password nil
   "Your netease music password."
+  :type 'string)
+
+(defcustom user-id nil
+  "Your netease music user id."
   :type 'string)
 
 (defconst buffer-name-search "Search Results"
@@ -92,6 +103,9 @@
 
 (defvar search-songs-list ()
   "Search songs list.")
+
+(defvar mvs-list ()
+  "MVs list.")
 
 (defconst api "http://119.23.207.231:3000"
   "NetEase Music API ADDRESS.")
@@ -132,6 +146,18 @@
 (defconst artist-details-url "/artists"
   "Artist details url.")
 
+(defconst artist-mv-url "/artist/mv"
+  "Artist mv url.")
+
+(defconst get-mv-url "/mv"
+  "Get mv url.")
+
+(defconst get-mv-args "?mvid=%s"
+  "Get mv args.")
+
+(defconst artist-mv-args "?id=%s"
+  "Artist mv args.")
+
 (defconst login-args "?phone=%s&password=%s"
   "Login args.")
 
@@ -158,6 +184,14 @@
 
 (defconst artist-details-args "?id=%s"
   "Artist details args.")
+
+(defun format-artist-mv-args (artist-id)
+  "Format artist-mv-args with ARTIST-ID."
+  (format artist-mv-args artist-id))
+
+(defun format-get-mv-args (mv-id)
+  "Format get-mv-args with MV-ID."
+  (format get-mv-args mv-id))
 
 (defun format-artist-details-args (artist-id)
   "Format artist-details-args with ARTIST-ID."
@@ -478,6 +512,38 @@ Argument TRACKS is json string."
     (insert "*** Artist Best 50 Songs !")
     (insert (format-playlist-songs-table search-songs-list))))
 
+(defun get-current-playing-artist-mvs ()
+  "Get current playing artist's mvs."
+  (interactive)
+  (let* ((artist-id (slot-value current-playing-song 'artist-id))
+         (json (request artist-mv-url
+                        (format-artist-mv-args artist-id)))
+         (mvs (cdr (assoc 'mvs json)))
+         (count (length mvs)))
+    (setq mvs-list ())
+    (dotimes (index count)
+      (let* ((mv-json (aref mvs index))
+             (name (cdr (assoc 'name mv-json)))
+             (mv-id (cdr (assoc 'id mv-json)))
+             (artist-name (cdr (assoc 'name (cdr (assoc 'artist mv-json)))))
+             (artist-id (cdr (assoc 'id (cdr (assoc 'artist mv-json)))))
+             (publish-time (cdr (assoc 'publish-time mv-json)))
+             (mv-ins (make-instance 'mv)))
+        (setf (slot-value mv-ins 'name) name)
+        (setf (slot-value mv-ins 'mv-id) mv-id)
+        (setf (slot-value mv-ins 'artist-name) artist-name)
+        (setf (slot-value mv-ins 'artist-id) artist-id)
+        (setf (slot-value mv-ins 'publish-time) publish-time)
+        (push (cons name mv-ins) mvs-list)
+        (setq mvs-list (reverse-list mvs-list))))
+    (popwin:popup-buffer (get-buffer-create "netease-music-mv"))
+    (switch-to-buffer "netease-music-mv")
+    (erase-buffer)
+    (mode)
+    (insert (format-netease-title "Artist's mv" ""))
+    (insert "*** Artist's All mvs")
+    (insert (format-mvlist-table mvs-list))))
+
 (defun get-lyric (song-id)
   "Return lyric of current song by SONG-ID."
   (let* ((json (request lyric-url
@@ -507,7 +573,7 @@ Argument TRACKS is json string."
 (defun init-frame ()
   "Initial main interface.  When you first login netease-music list all your playlist."
   (interactive)
-  (format-user-detail netease-music-user-id)
+  (format-user-detail user-id)
   (switch-to-buffer "netease-music")
   (mode)
   (erase-buffer)
@@ -540,11 +606,18 @@ Argument TRACKS is json string."
                                    (format "%s\n" (car (elt playlist index))))))))
 
 (defun format-playlist-songs-table (songs)
-  "Format the playlist's all song."
+  "Format the playlist's all SONGS."
   (let ((songs-table ""))
     (dotimes (index (safe-length songs) songs-table)
       (setq songs-table (concat songs-table
                                 (format "%s\n" (car (elt songs index))))))))
+
+(defun format-mvlist-table (mvs)
+  "Format the mvs-list's all MVS."
+  (let ((mvs-table ""))
+    (dotimes (index (safe-length mvs) mvs-table)
+      (setq mvs-table (concat mvs-table
+                              (format "%s\n" (car (elt mvs index))))))))
 
 (defun find-admin-signature ()
   (slot-value admin-ins 'signature))
@@ -653,6 +726,24 @@ Argument LST: play this song from LST."
     (insert (format-playlist-songs-table songs-list))
     (goto-char (point-min))))
 
+(defun play-mv ()
+  "Play mv based on current line's content."
+  (interactive)
+  (let* ((mv-name (get-current-line-content))
+         (mv-ins (assoc-default mv-name mvs-list))
+         (mvid (slot-value mv-ins 'mv-id))
+         (mv-url (get-high-value-mv-real-url mvid)))
+    (message mv-url)
+    (emms-play-url mv-url)))
+
+(defun get-high-value-mv-real-url (mvid)
+  "Get high value mv's real url by MVID."
+  (let* ((json (request get-mv-url
+                        (format-get-mv-args mvid)))
+         (brs (cdr (assoc 'brs (cdr (assoc 'data json)))))
+         (mv-real-url (cdr (nth (- (length brs) 1) brs))))
+    mv-real-url))
+
 (defun jump-into ()
   "Jump into next buffer based on this line's content."
   (interactive)
@@ -668,6 +759,9 @@ Argument LST: play this song from LST."
            (message "jump into song")
            (jump-into-song-buffer songs-list)
            (move-to-current-song))
+          ((equal current-buffer-name "netease-music-mv")
+           (message "play mv.")
+           (play-mv))
           ((equal current-buffer-name "Search Results")
            (message "jump into search-song")
            (jump-into-song-buffer search-songs-list)))
