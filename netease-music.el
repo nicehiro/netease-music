@@ -459,6 +459,7 @@ Argument TRACKS is json string."
          (songs (cdr (assoc 'songs (cdr (assoc 'result json)))))
          (count (length songs))
          (current-config (current-window-configuration)))
+    (setq search-songs-list ())
     (dotimes (index count)
       (let* ((song (get-song-from-tracks songs index))
              (song-name (cdr (assoc 'name song)))
@@ -487,6 +488,7 @@ Argument TRACKS is json string."
          (hot-songs (cdr (assoc 'hotSongs json)))
          (count (length hot-songs))
          (current-config (current-window-configuration)))
+    (setq search-songs-list ())
     (dotimes (index count)
       (let* ((song-json (get-song-from-tracks hot-songs index))
              (song-name (cdr (assoc 'name song-json)))
@@ -509,7 +511,7 @@ Argument TRACKS is json string."
     (mode)
     (insert (format-netease-title "Artist Description"
                                   briefDesc))
-    (insert "*** Artist Best 50 Songs !")
+    (insert "*** Artist Best 50 Songs ! \n")
     (insert (format-playlist-songs-table search-songs-list))))
 
 (defun get-current-playing-artist-mvs ()
@@ -541,7 +543,7 @@ Argument TRACKS is json string."
     (erase-buffer)
     (mode)
     (insert (format-netease-title "Artist's mv" ""))
-    (insert "*** Artist's All mvs")
+    (insert "*** Artist's All mvs \n")
     (insert (format-mvlist-table mvs-list))))
 
 (defun get-lyric (song-id)
@@ -584,7 +586,7 @@ Argument TRACKS is json string."
   (insert (format-playlist-table play-list)))
 
 (defun play-song (song-url)
-  "Use EMMS to play song."
+  "Use EMMS to play song by it's SONG-URL."
   (message song-url)
   (emms-play-url song-url))
 
@@ -680,7 +682,8 @@ Argument LST: play this song from LST."
          (artist-id (find-artist-id song-name lst))
          (album (find-song-album song-name lst))
          (artist (find-song-artist song-name lst))
-         (song-real-url (get-song-real-url id)))
+         (song-real-url (get-song-real-url id))
+         (lyric (get-lyric id)))
     (get-buffer-create "netease-music-playing")
     (setq current-playing-song (make-instance 'song))
     (format-current-playing-song song-name artist album id artist-id)
@@ -689,8 +692,9 @@ Argument LST: play this song from LST."
       (erase-buffer)
       (mode)
       (insert (format-netease-title song-name
-                                    (format "Artist: %s  Album: %s" artist album)))
-      (insert (get-lyric id))
+                                    (format "Artist: %s  Album: %s" artist album))) 
+      (if lyric lyric (setq lyric "纯音乐"))
+      (insert lyric)
       (goto-char (point-min)))))
 
 (defun move-to-current-song ()
@@ -758,14 +762,19 @@ Argument LST: play this song from LST."
           ((equal current-buffer-name "netease-music-playlist")
            (message "jump into song")
            (jump-into-song-buffer songs-list)
-           (move-to-current-song))
+           (move-to-current-song)
+           (netease-music-mode-line-format))
           ((equal current-buffer-name "netease-music-mv")
            (message "play mv.")
            (play-mv))
           ((equal current-buffer-name "Search Results")
            (message "jump into search-song")
-           (jump-into-song-buffer search-songs-list)))
-    (netease-music-mode-line-format)))
+           (jump-into-song-buffer search-songs-list)
+           (netease-music-mode-line-format)))))
+
+;;; when emms finished current song's play, set player to nil.
+;;; if don't add this hook, will get an error.
+(add-hook 'emms-player-finished-hook 'netease-music-set-emms-player-to-nil)
 
 ;;; when emms finished current song's play, auto play next song.
 (add-hook 'emms-player-finished-hook 'netease-music-play-next)
@@ -822,11 +831,17 @@ Argument LST: play this song from LST."
 (defun i-like-it ()
   "You can add it to your favoriate songs' list if you like it."
   (interactive)
-  (request like-url
-           (format-like-args (slot-value
-                              (cdr (assoc (slot-value current-playing-song 'name) songs-list))
-                              'song-id)))
-  (message "Add to your favorite playlist!"))
+  (let* ((json (request like-url
+                        (format-like-args
+                         (slot-value current-playing-song 'song-id))))
+         (code (cdr (assoc 'code json))))
+    (if (= 200 code)
+        (message "Add to your favorite playlist!")
+      (message (format "message code: %s" code)))))
+
+(defun set-emms-player-to-nil ()
+  "Set 'emms-player-playing-p to nil."
+  (setq emms-player-playing-p nil))
 
 (defun mode-line-format ()
   "Set emms mode line."
