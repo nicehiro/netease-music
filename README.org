@@ -1,15 +1,17 @@
 * NetEase Music Library for Emacs
   
 ** Installnation
-1. If you use melpa, install emms from melpa. But melpa is blocked in China, so please use elpa-emacs-china instead.
+1. If you use melpa, install emms and names from melpa. But melpa is blocked in China sometimes, so please use emacs-china-elpa instead.
+   
+2. Install [[https://github.com/Binaryify/NeteaseCloudMusicApi][Binaryify's NeteaseCloudMusicApi]], and start this API server. The default server address is http://localhost:3000.
 
-2. Download music.el from github and add this file to your load-path.
+3. Download music.el from github and add this file to your load-path.
    #+BEGIN_SRC elisp
    (add-to-list 'load-path "your-path-to-netease-music.el")
    #+END_SRC
 
-3. Get YOUR-USER-ID.
-   You need to request this url: http://119.23.207.231:3000/login/cellphone?phone=YOUR-PHONE-NUMBER&password=YOUR-PASSWORD.
+4. Get YOUR-USER-ID.
+   You need to request this url: http://localhost:3000/login/cellphone?phone=YOUR-PHONE-NUMBER&password=YOUR-PASSWORD.
    Replace YOUR-PHONE-NUMBER with your real phone number(China) and YOUR-PASSWORD with your real password.
 
    Get  YOUR-USER-ID from 'account'. Just like this.
@@ -17,13 +19,16 @@
 
 4. Config. 
    #+BEGIN_SRC elisp
-   (require 'music)
+   (require 'netease-music)
    
    (setq netease-music-username "YOUR-PHONE-NUMBER")
    
    (setq netease-music-user-password "YOUR-PASSWORD")
    
    (setq netease-music-user-id "YOUR-USER-ID")
+
+   ;; api address default is http://localhost:3000
+   (setq netease-music-api "YOUR-API-ADDRESS")
    #+END_SRC
 
 5. Enjoy.

@@ -107,7 +107,7 @@
 (defvar mvs-list ()
   "MVs list.")
 
-(defconst api "http://119.23.207.231:3000"
+(defvar api nil
   "NetEase Music API ADDRESS.")
 
 (defconst login-url "/login/cellphone"
@@ -379,16 +379,16 @@ Argument TRACKS is json string."
     (kbd "q")
     'quit-window))
 
-(defun init ()
+(defun init-user-id ()
   "Initialize netease music information."
-  (login username user-password)
-  (init-frame))
+  (interactive)
+  (login username user-password))
 
 (defun login (username password)
   "Login netease music with user USERNAME and PASSWORD."
+  (interactive)
   (let* ((json (request login-url (format-login-args username password))))
-    (setq user-id (set-user-id json))
-    (format-user-detail user-id)))
+    (message (set-user-id json))))
 
 (defun request (url-pattern args)
   "Return json by requesting the url."
