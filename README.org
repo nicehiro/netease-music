@@ -1,60 +1,51 @@
 * NetEase Music Library for Emacs
-  
-** Installnation
-1. If you use melpa, install emms and names from melpa. But melpa is blocked in China sometimes, so please use emacs-china-elpa instead.
-   
-2. Install [[https://github.com/Binaryify/NeteaseCloudMusicApi][Binaryify's NeteaseCloudMusicApi]], and start this API server. The default server address is http://localhost:3000.
 
-3. Download music.el from github and add this file to your load-path.
+** Installnation
+1. If you use melpa, install names from melpa. But melpa is blocked in China sometimes, so please use emacs-china-elpa instead.
+
+2. Install mplayer.
+
+3. Install [[https://github.com/Binaryify/NeteaseCloudMusicApi][Binaryify's NeteaseCloudMusicApi]], and start this API server. The default server address is http://localhost:3000.
+
+4. Download music.el from github and add this file to your load-path.
    #+BEGIN_SRC elisp
    (add-to-list 'load-path "your-path-to-netease-music.el")
    #+END_SRC
 
-4. Get YOUR-USER-ID.
+5. Get YOUR-USER-ID.
    You need to request this url: http://localhost:3000/login/cellphone?phone=YOUR-PHONE-NUMBER&password=YOUR-PASSWORD.
    Replace YOUR-PHONE-NUMBER with your real phone number(China) and YOUR-PASSWORD with your real password.
 
-   Get  YOUR-USER-ID from 'account'. Just like this.
+   Get YOUR-USER-ID from 'account'. Just like this.
    [[./images/get_id.png]]
 
-4. Config. 
+6. Config.
    #+BEGIN_SRC elisp
    (require 'netease-music)
-   
    (setq netease-music-username "YOUR-PHONE-NUMBER")
-   
    (setq netease-music-user-password "YOUR-PASSWORD")
-   
    (setq netease-music-user-id "YOUR-USER-ID")
-
    ;; api address default is http://localhost:3000
    (setq netease-music-api "YOUR-API-ADDRESS")
    #+END_SRC
 
-5. Enjoy.
-
+7. Enjoy.
    [[https://www.bilibili.com/video/av20083501/?spm_id_from=333.23.home_video_list.1][demo]]
-   
-6. Improve sound quality.
-   
-   When I listen songs in my machine, the sound quality was so bad, and I knew the song's quality was perfect. So if you have the same problem, you can install [[https://mpv.io/][mpv]] and [[https://github.com/dochang/emms-player-mpv][emms-player-mpv]]. Use mpv to play songs.
 
 ** Useage
-
 - =M-x netease-music-init-frame= Initialize netease-music buffer.
-- =M-x netease-music-jump-into= Jump into the playlist. You can use "Enter" too if you use evil.
-- =M-x netease-music-jump-into= Play current song. You can use "Enter" too if you use evil.
-- =M-x netease-music-play-next= Play next song in this playlist. You can use "n" too if you use evil.
+- =M-x netease-music-jump-into= Jump into the playlist.
+- =M-x netease-music-jump-into= Play current song.
+- =M-x netease-music-play-next= Play next song in this playlist.
+- =M-x netease-music-play-toggle= Toggle current playing status.
 - =M-x netease-music-search= Search songs.
 - =M-x netease-music-i-like-it= Collect song to your "favoriate song list".
 - =M-x netease-music-get-current-playing-artist-songs= Get current playing artist's Best 50 songs.
 - =M-x netease-music-get-current-playing-artist-mvs= Get current playing artist's all mvs.
-  
+
 ** Thanks
+[[https://github.com/Binaryify/NeteaseCloudMusicApi][Binaryify's NeteaseCloudMusicApi.]] For the music api service.
+[[https://github.com/zhengyuli/WangyiMusic][WangyiMusic]] For the process code.
 
-[[https://github.com/Binaryify/NeteaseCloudMusicApi][Binaryify's NeteaseCloudMusicApi.]]
-  
 ** Functions to be improved 
-
-- Get player's infomation.
 - Use macro to simplification.

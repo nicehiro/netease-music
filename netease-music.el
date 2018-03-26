@@ -69,6 +69,10 @@
    (mv-id)
    (publish-time)))
 
+(defcustom player "mplayer"
+  "Netease music player.  Default player is mplayer."
+  :type 'string)
+
 (defcustom username nil
   "Your netease music username."
   :type 'string)
@@ -84,6 +88,15 @@
 (defconst buffer-name-search "Search Results"
   "Search window buffer's name.")
 
+(defconst old-mode-line-format mode-line-format
+  "Backup actual mode-line format.")
+
+(defvar process nil
+  "The process of netease music player.")
+
+(defvar status ""
+  "Netease music player status.")
+
 (defvar play-list ()
   "Your Play List.")
 
@@ -91,7 +104,7 @@
   "This is current playing song.")
 
 (defun format-current-playing-song (name artist album song-id artist-id)
-  "Format current playing song with song's NAME, ARTIST, ALBUM and SONG-ID."
+  "Format current playing song with song's NAME, ARTIST, ALBUM SONG-ID and ARTIST-ID."
   (setf (slot-value current-playing-song 'name) name)
   (setf (slot-value current-playing-song 'artist) artist)
   (setf (slot-value current-playing-song 'album) album)
@@ -250,7 +263,7 @@ Argument TRACKS is json string."
     artist-id))
 
 (defun format-song-detail (tracks instance)
-  "Format song INSTANCE.  Argument TRACKS is json string."
+  "Use json string TRACKS to initialize an song's INSTANCE."
   (setf (slot-value instance 'name) (set-song-name tracks))
   (setf (slot-value instance 'song-id) (set-song-id tracks))
   (setf (slot-value instance 'artist) (set-artist-name tracks))
@@ -352,32 +365,7 @@ Argument TRACKS is json string."
   (url-unhex-string (concat api url args)))
 
 (define-derived-mode mode org-mode "netease-music"
-  "Key bindings of netease-music-mode."
-  (evil-define-key
-    'normal
-    netease-music-mode-map
-    (kbd "RET")
-    'netease-music-jump-into)
-  (evil-define-key
-    'normal
-    netease-music-mode-map
-    (kbd "l")
-    'netease-music-i-like-it)
-  (evil-define-key
-    'normal
-    netease-music-mode-map
-    (kbd "n")
-    'netease-music-play-next)
-  (evil-define-key
-    'normal
-    netease-music-mode-map
-    (kbd "p")
-    'netease-music-pause)
-  (evil-define-key
-    'normal
-    netease-music-mode-map
-    (kbd "q")
-    'quit-window))
+  "Key bindings of netease-music-mode.")
 
 (defun init-user-id ()
   "Initialize netease music information."
@@ -391,7 +379,7 @@ Argument TRACKS is json string."
     (message (set-user-id json))))
 
 (defun request (url-pattern args)
-  "Return json by requesting the url."
+  "Return json by requesting the url.  The url is consists of URL-PATTERN and ARGS."
   (let (json)
     (with-current-buffer (url-retrieve-synchronously
                           (format-request-url url-pattern args))
@@ -423,7 +411,8 @@ Argument TRACKS is json string."
   (cdr (assoc 'tracks (cdr (assoc 'result json)))))
 
 (defun get-song-from-tracks (json index)
-  "Get song details from JSON string."
+  "Get the specific ordered song from JSON string.
+Argument: INDEX, the song's order."
   (aref json index))
 
 (defun get-playlist-detail (id)
@@ -586,19 +575,12 @@ Argument TRACKS is json string."
   (insert (format-playlist-table play-list)))
 
 (defun play-song (song-url)
-  "Use EMMS to play song by it's SONG-URL."
-  (message song-url)
-  (emms-play-url song-url))
-
-(defun play ()
-  "Play song."
-  (interactive)
-  (emms-start))
-
-(defun pause ()
-  "Stop song."
-  (interactive)
-  (emms-stop))
+  "Use player to play song by it's SONG-URL."
+  ;; (message song-url)
+  (if (and process
+           (process-live-p process))
+      (kill-process))
+  (play song-url))
 
 (defun format-playlist-table (playlist)
   "Format the user's all PLAYLIST."
@@ -622,14 +604,18 @@ Argument TRACKS is json string."
                               (format "%s\n" (car (elt mvs index))))))))
 
 (defun find-admin-signature ()
+  "Get admin's signature."
   (slot-value admin-ins 'signature))
 
 (defun find-playlist-id (playlist-name)
-  "Return playlist id from play-list which contains the users' all playlist."
+  "Return playlist id from play-list.
+Argument: PLAYLIST-NAME, the playlist's name."
   (setq playlist-ins (assoc-default playlist-name play-list))
   (slot-value playlist-ins 'id))
 
 (defun find-playlist-description (playlist-name)
+  "Return playlist description from play-list.
+Argument: PLAYLIST-NAME, the playlist's name."
   (setq playlist-ins (assoc-default playlist-name play-list))
   (slot-value playlist-ins 'description))
 
@@ -650,21 +636,22 @@ Argument TRACKS is json string."
     (goto-char (point-min))))
 
 (defun find-song-id (song-name lst)
-  "Find song's id of current song."
+  "Find song's id which name is SONG-NAME from the specific LST."
   (setq song-ins (assoc-default song-name lst))
   (slot-value song-ins 'song-id))
 
 (defun find-artist-id (song-name lst)
+  "Find song's artist id which name is SONG-NAME from the specific LST."
   (setq song-ins (assoc-default song-name lst))
   (slot-value song-ins 'artist-id))
 
 (defun find-song-album (song-name lst)
-  "Find song's album of current song."
+  "Find song's album name which name is SONG-NAME from the specific LST."
   (setq song-ins (assoc-default song-name lst))
   (slot-value song-ins 'album))
 
 (defun find-song-artist (song-name lst)
-  "Find song's artist of current song."
+  "Find song's artist name which name is SONG-NAME from the specific LST."
   (setq song-ins (assoc-default song-name lst))
   (slot-value song-ins 'artist))
 
@@ -692,7 +679,7 @@ Argument LST: play this song from LST."
       (erase-buffer)
       (mode)
       (insert (format-netease-title song-name
-                                    (format "Artist: %s  Album: %s" artist album))) 
+                                    (format "Artist: %s  Album: %s" artist album)))
       (if lyric lyric (setq lyric "纯音乐"))
       (insert lyric)
       (goto-char (point-min)))))
@@ -738,7 +725,7 @@ Argument LST: play this song from LST."
          (mvid (slot-value mv-ins 'mv-id))
          (mv-url (get-high-value-mv-real-url mvid)))
     (message mv-url)
-    (emms-play-url mv-url)))
+    (play-song mv-url)))
 
 (defun get-high-value-mv-real-url (mvid)
   "Get high value mv's real url by MVID."
@@ -771,16 +758,6 @@ Argument LST: play this song from LST."
            (message "jump into search-song")
            (jump-into-song-buffer search-songs-list)
            (netease-music-mode-line-format)))))
-
-;;; when emms finished current song's play, set player to nil.
-;;; if don't add this hook, will get an error.
-(add-hook 'emms-player-finished-hook 'netease-music-set-emms-player-to-nil)
-
-;;; when emms finished current song's play, auto play next song.
-(add-hook 'emms-player-finished-hook 'netease-music-play-next)
-
-;; when emms finished current song's play, auto change song's name in mode line.
-(add-hook 'emms-player-finished-hook 'netease-music-mode-line-format)
 
 (defun play-next ()
   "Return next song name in songs-list."
@@ -839,14 +816,55 @@ Argument LST: play this song from LST."
         (message "Add to your favorite playlist!")
       (message (format "message code: %s" code)))))
 
-(defun set-emms-player-to-nil ()
-  "Set 'emms-player-playing-p to nil."
-  (setq emms-player-playing-p nil))
+(defun process-live-p (proc)
+  "Check netease music PROC is alive."
+  (memq (process-status proc)
+        '(run open listen connect stop)))
+
+(defun play (song-real-url)
+  "Play a song by SONG-REAL-URL."
+  (unless (and process
+               (process-live-p process))
+    (setq process
+          (start-process "netease-music-proc"
+                         nil
+                         player
+                         (if (string-match player "mplayer")
+                             "-slave"
+                           "")
+                         song-real-url))
+    (set-process-sentinel process 'netease-music-proc-sentinel)
+    (setq status "playing")))
+
+(defun toggle ()
+  "Pause song or resume song."
+  (interactive)
+  (if (string-match status "playing")
+      (progn
+        (setq status "paused")
+        (process-send-string process "pause\n"))
+    (if (string-match status "paused")
+        (progn
+          (setq status "playing")
+          (process-send-string process "pause\n")))))
+
+(defun kill-process ()
+  "Kill current playing process."
+  (when (and process
+             (process-live-p process))
+    (delete-process process)
+    (setq process nil)))
+
+(defun proc-sentinel (proc change)
+  "Netease music sentinel for PROC with CHANGE."
+  (when (string-match "\\(finished\\|Exiting\\)" change)
+    (play-next)))
 
 (defun mode-line-format ()
-  "Set emms mode line."
-  (setq emms-mode-line-format (slot-value netease-music-current-playing-song 'name))
-  (emms-mode-line-alter-mode-line)))
+  "Show current-playing-song name on mode line."
+  (let ((song-name (slot-value netease-music-current-playing-song 'name)))
+    (setq mode-line-format old-mode-line-format)
+    (setq mode-line-format (append mode-line-format (cons song-name nil))))))
 
 (provide 'netease-music)
 ;;; netease-music.el ends here
