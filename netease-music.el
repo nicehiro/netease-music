@@ -33,6 +33,7 @@
 (require 'json)
 (require 'url)
 (require 'org)
+(require 'names)
 
 (defgroup netease-music nil
   "Netease music plugin for Emacs."
