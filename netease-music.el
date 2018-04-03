@@ -1,6 +1,8 @@
-;;; netease-music.el --- netease music library for Emacs  -*- lexical-binding: t; -*-
+;;; netease-music.el --- listen netease music
 
 ;; Copyright (C) 2018  hiro方圆
+;; Version: 1.0
+;; URL: https://github.com/nicehiro/netease-music
 
 ;; Author: hiro方圆 <wfy11235813@gmail.com>
 ;; Keywords: tools
