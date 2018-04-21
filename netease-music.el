@@ -201,25 +201,9 @@
 (defconst artist-details-args "?id=%s"
   "Artist details args.")
 
-(defun format-artist-mv-args (artist-id)
-  "Format artist-mv-args with ARTIST-ID."
-  (format artist-mv-args artist-id))
-
-(defun format-get-mv-args (mv-id)
-  "Format get-mv-args with MV-ID."
-  (format get-mv-args mv-id))
-
-(defun format-artist-details-args (artist-id)
-  "Format artist-details-args with ARTIST-ID."
-  (format artist-details-args artist-id))
-
-(defun format-lyric-args (song-id)
-  "Format lyric args with SONG-ID."
-  (format lyric-args song-id))
-
-(defun format-like-args (song-id)
-  "Format like-args with SONG-ID."
-  (format like-args song-id))
+(defmacro format-args (url-name args)
+  "Format URL-NAME with ARGS."
+  `(format ,url-name ,@args))
 
 (defconst netease-music-title
   "* NetEase Music\n %s  等级：%s 听歌数：%s \n私人FM\n%s \n** %s \n%s \n")
@@ -324,35 +308,11 @@ Argument TRACKS is json string."
 
 (defun format-user-detail (id)
   "Initialize user details with user ID."
-  (let* ((json (request user-detail-url (format-user-detail-args id))))
+  (let* ((json (request user-detail-url (format-args netease-music-user-detail-args (id)))))
     (setf (slot-value admin-ins 'name) (set-user-nickname json))
     (setf (slot-value admin-ins 'level) (set-user-level json))
     (setf (slot-value admin-ins 'listenSongs) (set-user-listenSongs json))
     (setf (slot-value admin-ins 'signature) (set-user-signature json))))
-
-(defun format-login-args (phone password)
-  "Format login args with PHONE and PASSWORD."
-  (format login-args phone password))
-
-(defun format-user-detail-args (id)
-  "Format user detail args with user ID."
-  (format user-detail-args id))
-
-(defun format-playlist-args (id)
-  "Format playlist args with user ID."
-  (format playlist-args id))
-
-(defun format-playlist-detail-args (id)
-  "Format playlist detail args with playlist ID."
-  (format playlist-detail-args id))
-
-(defun format-song-args (id)
-  "Format song args with song ID."
-  (format song-args id))
-
-(defun format-search-args (keyword)
-  "Format search args with search KEYWORD."
-  (format search-args keyword))
 
 (defvar user-id nil
   "User id.")
@@ -378,7 +338,7 @@ Argument TRACKS is json string."
 (defun login (username password)
   "Login netease music with user USERNAME and PASSWORD."
   (interactive)
-  (let* ((json (request login-url (format-login-args username password))))
+  (let* ((json (request login-url (format-args netease-music-login-args (username password)))))
     (message (set-user-id json))))
 
 (defun request (url-pattern args)
@@ -397,7 +357,7 @@ Argument TRACKS is json string."
 (defun get-playlist ()
   "Format playlist detail to a dict."
   (let* ((json (request play-list-url
-                        (format-playlist-args user-id)))
+                        (format-args netease-music-playlist-args (netease-music-user-id))))
          (detail (cdr (assoc 'playlist json))))
     (setq play-list ())
     (dotimes (i (length detail))
@@ -421,7 +381,7 @@ Argument: INDEX, the song's order."
 (defun get-playlist-detail (id)
   "Get playlist's songs through playlist ID."
   (let* ((json (request playlist-detail-url
-                        (format-playlist-detail-args id)))
+                        (format-args netease-music-playlist-detail-args (id))))
          (tracks (get-playlist-tracks json)))
     (get-songs-from-tracks tracks)))
 
@@ -447,7 +407,7 @@ Argument: INDEX, the song's order."
   (interactive)
   (let* ((keywords (read-string "Please input the keywords you want to search: "))
          (json (request search-url
-                        (format-search-args keywords)))
+                        (format-args netease-music-search-args (keywords))))
          (songs (cdr (assoc 'songs (cdr (assoc 'result json)))))
          (count (length songs))
          (current-config (current-window-configuration)))
@@ -474,7 +434,7 @@ Argument: INDEX, the song's order."
   (interactive)
   (let* ((artist-id (slot-value current-playing-song 'artist-id))
          (json (request artist-details-url
-                        (format-artist-details-args artist-id)))
+                        (format-args netease-music-artist-details-args artist-id)))
          (artist-name (cdr (assoc 'name (cdr (assoc 'artist json)))))
          (briefDesc (cdr (assoc 'briefDesc (cdr (assoc 'artist json)))))
          (hot-songs (cdr (assoc 'hotSongs json)))
@@ -511,7 +471,7 @@ Argument: INDEX, the song's order."
   (interactive)
   (let* ((artist-id (slot-value current-playing-song 'artist-id))
          (json (request artist-mv-url
-                        (format-artist-mv-args artist-id)))
+                        (format-args netease-music-artist-mv-args (artist-id))))
          (mvs (cdr (assoc 'mvs json)))
          (count (length mvs)))
     (setq mvs-list ())
@@ -541,7 +501,7 @@ Argument: INDEX, the song's order."
 (defun get-lyric (song-id)
   "Return lyric of current song by SONG-ID."
   (let* ((json (request lyric-url
-                        (format-lyric-args song-id)))
+                        (format-args netease-music-lyric-args (song-id))))
          (lrc (cdr (assoc 'lrc json)))
          (lyric (cdr (assoc 'lyric lrc))))
     lyric))
@@ -549,7 +509,7 @@ Argument: INDEX, the song's order."
 (defun get-song-real-url (id)
   "Return song's real url by song's ID."
   (let* ((json (request song-url
-                        (format-song-args id))))
+                        (format-args netease-music-song-args (id)))))
     (cdr (assoc 'url (aref (cdr (assoc 'data json)) 0)))))
 
 (defun get-personal-fm ()
@@ -677,6 +637,10 @@ Argument LST: play this song from LST."
     (get-buffer-create "netease-music-playing")
     (setq current-playing-song (make-instance 'song))
     (format-current-playing-song song-name artist album id artist-id)
+    (if (equal song-real-url nil)
+        (progn
+          (message "Cannot load this song's real url.")
+          (netease-music-play-next)))
     (play-song song-real-url)
     (with-current-buffer "netease-music-playing"
       (erase-buffer)
@@ -733,7 +697,7 @@ Argument LST: play this song from LST."
 (defun get-high-value-mv-real-url (mvid)
   "Get high value mv's real url by MVID."
   (let* ((json (request get-mv-url
-                        (format-get-mv-args mvid)))
+                        (format-args netease-music-get-mv-args (mvid))))
          (brs (cdr (assoc 'brs (cdr (assoc 'data json)))))
          (mv-real-url (cdr (nth (- (length brs) 1) brs))))
     mv-real-url))
@@ -812,8 +776,8 @@ Argument LST: play this song from LST."
   "You can add it to your favoriate songs' list if you like it."
   (interactive)
   (let* ((json (request like-url
-                        (format-like-args
-                         (slot-value current-playing-song 'song-id))))
+                        (format-args netease-music-like-args
+                                     ((slot-value netease-music-current-playing-song 'song-id)))))
          (code (cdr (assoc 'code json))))
     (if (= 200 code)
         (message "Add to your favorite playlist!")
