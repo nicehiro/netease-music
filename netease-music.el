@@ -434,7 +434,7 @@ Argument: INDEX, the song's order."
   (interactive)
   (let* ((artist-id (slot-value current-playing-song 'artist-id))
          (json (request artist-details-url
-                        (format-args netease-music-artist-details-args artist-id)))
+                        (format-args netease-music-artist-details-args (artist-id))))
          (artist-name (cdr (assoc 'name (cdr (assoc 'artist json)))))
          (briefDesc (cdr (assoc 'briefDesc (cdr (assoc 'artist json)))))
          (hot-songs (cdr (assoc 'hotSongs json)))
