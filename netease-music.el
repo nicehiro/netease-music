@@ -3,9 +3,9 @@
 ;; Copyright (C) 2018  hiro方圆
 ;; Version: 1.0
 ;; URL: https://github.com/nicehiro/netease-music
-
+;; Package-Requires: ((names "0.5") (emacs "25"))
 ;; Author: hiro方圆 <wfy11235813@gmail.com>
-;; Keywords: tools
+;; Keywords: multimedia Chinese music
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -38,12 +38,12 @@
 (require 'names)
 
 (defgroup netease-music nil
-  "Netease music plugin for Emacs."
+  "Netease music plugin."
   :prefix "netease-music-"
-  :group 'music
+  :group 'multimedia
   :link '(url-link :tag "Github" "https://github.com/nicehiro/netease-music"))
 
-
+;;;###autoload
 (define-namespace netease-music-
 
 (defclass song ()
