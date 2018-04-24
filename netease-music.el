@@ -43,7 +43,6 @@
   :group 'multimedia
   :link '(url-link :tag "Github" "https://github.com/nicehiro/netease-music"))
 
-;;;###autoload
 (define-namespace netease-music-
 
 (defclass song ()
@@ -524,6 +523,7 @@ Argument: INDEX, the song's order."
         (format-song-detail song-json song-ins)
         (push (cons song-name song-ins) songs-list)))))
 
+;;;###autoload
 (defun init-frame ()
   "Initial main interface.  When you first login netease-music list all your playlist."
   (interactive)
@@ -638,9 +638,7 @@ Argument LST: play this song from LST."
     (setq current-playing-song (make-instance 'song))
     (format-current-playing-song song-name artist album id artist-id)
     (if (equal song-real-url nil)
-        (progn
-          (message "Cannot load this song's real url.")
-          (netease-music-play-next)))
+        (message "Cannot play current song. Don't get the song's real url."))
     (play-song song-real-url)
     (with-current-buffer "netease-music-playing"
       (erase-buffer)
@@ -702,6 +700,7 @@ Argument LST: play this song from LST."
          (mv-real-url (cdr (nth (- (length brs) 1) brs))))
     mv-real-url))
 
+;;;###autoload
 (defun jump-into ()
   "Jump into next buffer based on this line's content."
   (interactive)
@@ -726,6 +725,7 @@ Argument LST: play this song from LST."
            (jump-into-song-buffer search-songs-list)
            (netease-music-mode-line-format)))))
 
+;;;###autoload
 (defun play-next ()
   "Return next song name in songs-list."
   (interactive)
@@ -788,6 +788,7 @@ Argument LST: play this song from LST."
   (memq (process-status proc)
         '(run open listen connect stop)))
 
+;;;###autoload
 (defun play (song-real-url)
   "Play a song by SONG-REAL-URL."
   (unless (and process
@@ -803,6 +804,7 @@ Argument LST: play this song from LST."
     (set-process-sentinel process 'netease-music-proc-sentinel)
     (setq status "playing")))
 
+;;;###autoload
 (defun toggle ()
   "Pause song or resume song."
   (interactive)
