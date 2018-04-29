@@ -396,9 +396,11 @@ Argument: INDEX, the song's order."
   (dotimes (index (length tracks))
     (let* ((song-json (get-song-from-tracks tracks index))
            (song-name (cdr (assoc 'name song-json)))
+           (song-id (cdr (assoc 'id song-json)))
+           ;; TODO: get song-id from songs-list
            (song-ins (make-instance 'song)))
       (format-song-detail song-json song-ins)
-      (push (cons song-name song-ins) songs-list)))
+      (push (cons song-id song-ins) songs-list)))
   (setq songs-list (reverse-list songs-list)))
 
 (defun search ()
@@ -557,7 +559,9 @@ Argument: INDEX, the song's order."
   (let ((songs-table ""))
     (dotimes (index (safe-length songs) songs-table)
       (setq songs-table (concat songs-table
-                                (format "%s\n" (car (elt songs index))))))))
+                                ;; TODO: change format type
+                                (format "[[%s][%s]]\n"
+                                        (car (elt songs index)) (slot-value (cdr (elt songs index)) 'name)))))))
 
 (defun format-mvlist-table (mvs)
   "Format the mvs-list's all MVS."
@@ -598,42 +602,51 @@ Argument: PLAYLIST-NAME, the playlist's name."
     (insert (format-playlist-songs-table songs-list))
     (goto-char (point-min))))
 
-(defun find-song-id (song-name lst)
-  "Find song's id which name is SONG-NAME from the specific LST."
-  (setq song-ins (assoc-default song-name lst))
+(defun find-song-id (song-id lst)
+  "Find song's id which name is SONG-ID from the specific LST."
+  (setq song-ins (assoc-default song-id lst))
   (slot-value song-ins 'song-id))
 
-(defun find-artist-id (song-name lst)
-  "Find song's artist id which name is SONG-NAME from the specific LST."
-  (setq song-ins (assoc-default song-name lst))
+(defun find-artist-id (song-id lst)
+  "Find song's artist id which name is SONG-ID from the specific LST."
+  (setq song-ins (assoc-default song-id lst))
   (slot-value song-ins 'artist-id))
 
-(defun find-song-album (song-name lst)
-  "Find song's album name which name is SONG-NAME from the specific LST."
-  (setq song-ins (assoc-default song-name lst))
+(defun find-song-album (song-id lst)
+  "Find song's album name which name is SONG-ID from the specific LST."
+  (setq song-ins (assoc-default song-id lst))
   (slot-value song-ins 'album))
 
-(defun find-song-artist (song-name lst)
-  "Find song's artist name which name is SONG-NAME from the specific LST."
-  (setq song-ins (assoc-default song-name lst))
+(defun find-song-artist (song-id lst)
+  "Find song's artist name which name is SONG-ID from the specific LST."
+  (setq song-ins (assoc-default song-id lst))
   (slot-value song-ins 'artist))
+
+(defun find-song-name (song-id lst)
+  "Find song's name which name is SONG-ID from the specific LST."
+  (setq song-ins (assoc-default song-id lst))
+  (slot-value song-ins 'name))
 
 (defun jump-into-song-buffer (lst)
   "Switch to the song's buffer whose name is this line's content.
 Argument LST: play this song from LST."
   (interactive)
-  (let ((song-name (get-current-line-content)))
-    (play-song-by-name song-name lst)))
+  (let* ((line-content (get-current-line-content))
+         (song-id (get-music-id-from-content line-content)))
+    (message song-id)
+    (play-song-by-id (string-to-number song-id) lst)))
 
-(defun play-song-by-name (song-name lst)
-  "Play a song by the SONG-NAME.
+(defun play-song-by-id (song-id lst)
+  "Play a song by the SONG-ID.
 Argument LST: play this song from LST."
-  (let* ((id (find-song-id song-name lst))
-         (artist-id (find-artist-id song-name lst))
-         (album (find-song-album song-name lst))
-         (artist (find-song-artist song-name lst))
+  (let* ((id (find-song-id song-id lst))
+         (artist-id (find-artist-id song-id lst))
+         (album (find-song-album song-id lst))
+         (artist (find-song-artist song-id lst))
          (song-real-url (get-song-real-url id))
+         (song-name (find-song-name song-id lst))
          (lyric (get-lyric id)))
+    (message song-name)
     (get-buffer-create "netease-music-playing")
     (setq current-playing-song (make-instance 'song))
     (format-current-playing-song song-name artist album id artist-id)
@@ -737,6 +750,7 @@ Argument LST: play this song from LST."
     (dotimes (index count next-song-name)
       (let* ((block (nth index songs-list))
              (song-ins (cdr block))
+             (song-id (slot-value song-ins 'song-id))
              (song-name (slot-value song-ins 'name)))
         (if (and (equal song-name current-playing-song-name)
                  (< index (- count 1)))
@@ -748,7 +762,7 @@ Argument LST: play this song from LST."
                           'name))))
     (message next-song-name)
     (if can-play
-        (play-song-by-name next-song-name netease-music-songs-list))
+        (play-song-by-id next-song-name netease-music-songs-list))
     (mode-line-format)
     (move-to-current-song)))
 
@@ -763,6 +777,11 @@ Argument LST: play this song from LST."
   (car (split-string
         (thing-at-point 'line t)
         "\n")))
+
+(defun get-music-id-from-content (line-content)
+  "Return current LINE-CONTENT's music id."
+  (string-match "[0-9]+" line-content)
+  (match-string 0 line-content))
 
 (defun reverse-list (lst)
   "Reverse LST."
