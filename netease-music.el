@@ -90,9 +90,6 @@
 (defconst buffer-name-search "Search Results"
   "Search window buffer's name.")
 
-(defconst old-mode-line-format mode-line-format
-  "Backup actual mode-line format.")
-
 (defvar process nil
   "The process of netease music player.")
 
@@ -657,6 +654,7 @@ Argument LST: play this song from LST."
           (message "Cannot play current song. Don't get the song's real url.")
           (kill-process)))
     (play-song song-real-url)
+    (setq global-mode-string song-name)
     (with-current-buffer "netease-music-playing"
       (erase-buffer)
       (mode)
@@ -732,15 +730,13 @@ Argument LST: play this song from LST."
           ((equal current-buffer-name "netease-music-playlist")
            (message "jump into song")
            (jump-into-song-buffer songs-list)
-           (move-to-current-song)
-           (netease-music-mode-line-format))
+           (move-to-current-song))
           ((equal current-buffer-name "netease-music-mv")
            (message "play mv.")
            (play-mv))
           ((equal current-buffer-name "Search Results")
            (message "jump into search-song")
-           (jump-into-song-buffer search-songs-list)
-           (netease-music-mode-line-format)))))
+           (jump-into-song-buffer search-songs-list)))))
 
 ;;;###autoload
 (defun play-next ()
@@ -768,7 +764,7 @@ Argument LST: play this song from LST."
     (message next-song-name)
     (if can-play
         (play-song-by-id next-song-id netease-music-songs-list))
-    (mode-line-format)
+    (setq global-mode-string song-name)
     (move-to-current-song)))
 
 (defun add-to-songslist (song-ins)
@@ -852,12 +848,6 @@ Argument LST: play this song from LST."
   "Netease music sentinel for PROC with CHANGE."
   (when (string-match "\\(finished\\|Exiting\\)" change)
     (play-next)))
-
-(defun mode-line-format ()
-  "Show current-playing-song name on mode line."
-  (let ((song-name (slot-value netease-music-current-playing-song 'name)))
-    (setq mode-line-format old-mode-line-format)
-    (setq mode-line-format (append mode-line-format (cons song-name nil))))))
 
 (provide 'netease-music)
 ;;; netease-music.el ends here
