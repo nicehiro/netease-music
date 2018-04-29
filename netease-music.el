@@ -416,9 +416,10 @@ Argument: INDEX, the song's order."
     (dotimes (index count)
       (let* ((song (get-song-from-tracks songs index))
              (song-name (cdr (assoc 'name song)))
+             (song-id (cdr (assoc 'id song)))
              (song-ins (make-instance 'song)))
         (format-song-detail song song-ins)
-        (push (cons song-name song-ins) search-songs-list)))
+        (push (cons song-id song-ins) search-songs-list)))
     (setq search-songs-list (reverse-list search-songs-list))
     ;;; popup window
     (popwin:popup-buffer (get-buffer-create buffer-name-search))
@@ -445,6 +446,7 @@ Argument: INDEX, the song's order."
     (dotimes (index count)
       (let* ((song-json (get-song-from-tracks hot-songs index))
              (song-name (cdr (assoc 'name song-json)))
+             (song-id (cdr (assoc 'id song-json)))
              (song-ins (make-instance 'song)))
         (setf (slot-value song-ins 'name) (cdr (assoc 'name song-json)))
         (setf (slot-value song-ins 'artist)
@@ -457,7 +459,7 @@ Argument: INDEX, the song's order."
         (setf (slot-value song-ins 'artist-id)
               (cdr (assoc 'id
                           (aref (cdr (assoc 'ar song-json)) 0))))
-        (push (cons song-name song-ins) search-songs-list)))
+        (push (cons song-id song-ins) search-songs-list)))
     (popwin:popup-buffer (get-buffer-create buffer-name-search))
     (switch-to-buffer buffer-name-search)
     (erase-buffer)
@@ -489,7 +491,7 @@ Argument: INDEX, the song's order."
         (setf (slot-value mv-ins 'artist-name) artist-name)
         (setf (slot-value mv-ins 'artist-id) artist-id)
         (setf (slot-value mv-ins 'publish-time) publish-time)
-        (push (cons name mv-ins) mvs-list)
+        (push (cons mv-id mv-ins) mvs-list)
         (setq mvs-list (reverse-list mvs-list))))
     (popwin:popup-buffer (get-buffer-create "netease-music-mv"))
     (switch-to-buffer "netease-music-mv")
@@ -568,7 +570,7 @@ Argument: INDEX, the song's order."
   (let ((mvs-table ""))
     (dotimes (index (safe-length mvs) mvs-table)
       (setq mvs-table (concat mvs-table
-                              (format "%s\n" (car (elt mvs index))))))))
+                              (format "[[%s][%s]]\n" (car (elt mvs index)) (slot-value (cdr (elt mvs index)) 'name)))))))
 
 (defun find-admin-signature ()
   "Get admin's signature."
@@ -651,7 +653,9 @@ Argument LST: play this song from LST."
     (setq current-playing-song (make-instance 'song))
     (format-current-playing-song song-name artist album id artist-id)
     (if (equal song-real-url nil)
-        (message "Cannot play current song. Don't get the song's real url."))
+        (progn
+          (message "Cannot play current song. Don't get the song's real url.")
+          (kill-process)))
     (play-song song-real-url)
     (with-current-buffer "netease-music-playing"
       (erase-buffer)
@@ -698,10 +702,10 @@ Argument LST: play this song from LST."
 (defun play-mv ()
   "Play mv based on current line's content."
   (interactive)
-  (let* ((mv-name (get-current-line-content))
-         (mv-ins (assoc-default mv-name mvs-list))
-         (mvid (slot-value mv-ins 'mv-id))
-         (mv-url (get-high-value-mv-real-url mvid)))
+  (let* ((line-content (get-current-line-content))
+         (mv-id (netease-music-get-music-id-from-content line-content))
+         (mv-ins (assoc-default mv-id mvs-list))
+         (mv-url (get-high-value-mv-real-url mv-id)))
     (message mv-url)
     (play-song mv-url)))
 
@@ -743,6 +747,7 @@ Argument LST: play this song from LST."
   "Return next song name in songs-list."
   (interactive)
   (let* ((current-playing-song-name (slot-value current-playing-song 'name))
+         (current-playing-song-id (slot-value current-playing-song 'song-id))
          (next-song-name current-playing-song-name)
          (can-play nil)
          (count (length songs-list))
@@ -752,25 +757,25 @@ Argument LST: play this song from LST."
              (song-ins (cdr block))
              (song-id (slot-value song-ins 'song-id))
              (song-name (slot-value song-ins 'name)))
-        (if (and (equal song-name current-playing-song-name)
+        (if (and (equal song-id current-playing-song-id)
                  (< index (- count 1)))
             (progn
               (setq can-play 1)
               (setq position index)))
-        (setq next-song-name
+        (setq next-song-id
               (slot-value (cdr (nth (+ position 1) songs-list))
-                          'name))))
+                          'song-id))))
     (message next-song-name)
     (if can-play
-        (play-song-by-id next-song-name netease-music-songs-list))
+        (play-song-by-id next-song-id netease-music-songs-list))
     (mode-line-format)
     (move-to-current-song)))
 
 (defun add-to-songslist (song-ins)
   "Add SONG-INS to songs-list."
   (interactive)
-  (let ((name (slot-value song-ins 'name)))
-    (push (cons name song-ins) songs-list)))
+  (let ((id (slot-value song-ins 'song-id)))
+    (push (cons id song-ins) songs-list)))
 
 (defun get-current-line-content ()
   "Return current line's content."
