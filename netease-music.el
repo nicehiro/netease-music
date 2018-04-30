@@ -761,6 +761,8 @@ Argument LST: play this song from LST."
         (setq next-song-id
               (slot-value (cdr (nth (+ position 1) songs-list))
                           'song-id))))
+    (setq next-song-name
+          (slot-value (cdr (nth (+ position 1) songs-list)) 'name))
     (message next-song-name)
     (if can-play
         (play-song-by-id next-song-id netease-music-songs-list))
