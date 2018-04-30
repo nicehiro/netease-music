@@ -847,7 +847,7 @@ Argument LST: play this song from LST."
 (defun proc-sentinel (proc change)
   "Netease music sentinel for PROC with CHANGE."
   (when (string-match "\\(finished\\|Exiting\\)" change)
-    (play-next)))
+    (play-next))))
 
 (provide 'netease-music)
 ;;; netease-music.el ends here
