@@ -764,7 +764,7 @@ Argument LST: play this song from LST."
     (message next-song-name)
     (if can-play
         (play-song-by-id next-song-id netease-music-songs-list))
-    (setq global-mode-string song-name)
+    (setq global-mode-string next-song-name)
     (move-to-current-song)))
 
 (defun add-to-songslist (song-ins)
