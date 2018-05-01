@@ -1,3 +1,4 @@
+[[https://melpa.org/#/netease-music][file:https://melpa.org/packages/netease-music-badge.svg]]
 * NetEase Music Library for Emacs
 
 ** Installnation
@@ -12,8 +13,13 @@
    (add-to-list 'load-path "your-path-to-netease-music.el")
    #+END_SRC
 
+   Or you can install it from melpa.
+
 5. Get YOUR-USER-ID.
-   You need to request this url: http://localhost:3000/login/cellphone?phone=YOUR-PHONE-NUMBER&password=YOUR-PASSWORD.
+
+   You need to request this url:
+   http://localhost:3000/login/cellphone?phone=YOUR-PHONE-NUMBER&password=YOUR-PASSWORD.
+
    Replace YOUR-PHONE-NUMBER with your real phone number(China) and YOUR-PASSWORD with your real password.
 
    Get YOUR-USER-ID from 'account'. Just like this.
@@ -43,9 +49,37 @@
 - =M-x netease-music-get-current-playing-artist-songs= Get current playing artist's Best 50 songs.
 - =M-x netease-music-get-current-playing-artist-mvs= Get current playing artist's all mvs.
 
+** Hot Key setting(Evil)
+#+BEGIN_SRC elisp
+(evil-define-key
+  'normal
+  netease-music-mode-map
+  (kbd "RET")
+  'netease-music-jump-into)
+(evil-define-key
+  'normal
+  netease-music-mode-map
+  (kbd "l")
+  'netease-music-i-like-it)
+(evil-define-key
+  'normal
+  netease-music-mode-map
+  (kbd "n")
+  'netease-music-play-next)
+(evil-define-key
+  'normal
+  netease-music-mode-map
+  (kbd "p")
+  'netease-music-toggle)
+(evil-define-key
+  'normal
+  netease-music-mode-map
+  (kbd "q")
+  'quit-window)
+#+END_SRC
+
 ** Thanks
-[[https://github.com/Binaryify/NeteaseCloudMusicApi][Binaryify's NeteaseCloudMusicApi.]] For the music api service.
+[[https://github.com/Binaryify/NeteaseCloudMusicApi][Binaryify's NeteaseCloudMusicApi]] For the music api service.
+
 [[https://github.com/zhengyuli/WangyiMusic][WangyiMusic]] For the process code.
 
-** Functions to be improved 
-- Use macro to simplification.
