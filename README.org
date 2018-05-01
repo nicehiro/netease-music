@@ -37,11 +37,11 @@
    #+END_SRC
 
 7. Enjoy.
-   [[file:images/playlist.png][playlists]]
+   [[file:images/playlist.png]]
 
-   [[file:images/songs.png][songs]]
+   [[file:images/songs.png]]
 
-   [[file:images/lyrics.png][lyrics]]
+   [[file:images/lyrics.png]]
 
 ** Useage
 - =M-x netease-music-init-frame= Initialize netease-music buffer.
