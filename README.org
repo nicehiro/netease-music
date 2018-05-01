@@ -1,5 +1,6 @@
-[[https://melpa.org/#/netease-music][file:https://melpa.org/packages/netease-music-badge.svg]]
 * NetEase Music Library for Emacs
+
+[[https://melpa.org/#/netease-music][file:https://melpa.org/packages/netease-music-badge.svg]]
 
 ** Installnation
 1. If you use melpa, install names from melpa. But melpa is blocked in China sometimes, so please use emacs-china-elpa instead.
@@ -36,7 +37,11 @@
    #+END_SRC
 
 7. Enjoy.
-   [[https://www.bilibili.com/video/av20083501/?spm_id_from=333.23.home_video_list.1][demo]]
+   [[file:images/playlist.png][playlists]]
+
+   [[file:images/songs.png][songs]]
+
+   [[file:images/lyrics.png][lyrics]]
 
 ** Useage
 - =M-x netease-music-init-frame= Initialize netease-music buffer.
