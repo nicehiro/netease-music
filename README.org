@@ -83,6 +83,16 @@
   'quit-window)
 #+END_SRC
 
+** TODOList [8/8]
+- [X] 登录
+- [X] 获取所有歌单
+- [X] 获取歌单详情
+- [X] 播放歌曲
+- [X] 显示歌词
+- [X] 获取歌手所有 MV
+- [X] 播放 MV
+- [X] 搜索歌曲
+
 ** Thanks
 [[https://github.com/Binaryify/NeteaseCloudMusicApi][Binaryify's NeteaseCloudMusicApi]] For the music api service.
 
