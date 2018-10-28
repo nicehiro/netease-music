@@ -137,7 +137,7 @@
 (defconst play-list-url "/user/playlist"
   "User playlist.")
 
-(defconst song-url "/music/url"
+(defconst song-url "/song/url"
   "Music real url.")
 
 (defconst lyric-url "/lyric"
