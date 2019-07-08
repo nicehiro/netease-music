@@ -202,7 +202,7 @@
   `(format ,url-name ,@args))
 
 (defconst netease-music-title
-  "* NetEase Music\n %s  等级：%s 听歌数：%s \n私人FM\n%s \n** %s \n%s \n")
+  "* NetEase Music\n %s  等级：%s 听歌数：%s\n私人FM\n%s\n** %s\n%s\n")
 
 (defun format-netease-title (banner-string description)
   "Format netease title with BANNER-STRING & DESCRIPTION."
@@ -512,9 +512,8 @@ Argument: INDEX, the song's order."
 
 (defun get-song-real-url (id)
   "Return song's real url by song's ID."
-  (let* ((json (request song-url
-                        (format-args netease-music-song-args (id)))))
-    (cdr (assoc 'url (aref (cdr (assoc 'data json)) 0)))))
+  (let ((url "https://music.163.com/song/media/outer/url?id=%s.mp3"))
+    (format url id)))
 
 (defun get-personal-fm ()
   "Get personal f.m. songs."
