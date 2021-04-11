@@ -3,25 +3,25 @@
 [[https://melpa.org/#/netease-music][file:https://melpa.org/packages/netease-music-badge.svg]]
 
 ** Installnation
-1. If you use melpa, install names from melpa. But melpa is blocked in China sometimes, so please use emacs-china-elpa instead.
+1. Install names.
 
 2. Install mplayer.
 
-3. Install [[https://github.com/Binaryify/NeteaseCloudMusicApi][Binaryify's NeteaseCloudMusicApi]], and start this API server. The default server address is http://localhost:3000.
+3. Install [[https://github.com/Binaryify/NeteaseCloudMusicApi][Binaryify's NeteaseCloudMusicApi]],
+   and start this API server. The default server address is http://localhost:3000.
 
 4. Download music.el from github and add this file to your load-path.
    #+BEGIN_SRC elisp
    (add-to-list 'load-path "your-path-to-netease-music.el")
    #+END_SRC
 
-   Or you can install it from melpa.
-
 5. Get YOUR-USER-ID.
 
    You need to request this url:
    http://localhost:3000/login/cellphone?phone=YOUR-PHONE-NUMBER&password=YOUR-PASSWORD.
 
-   Replace YOUR-PHONE-NUMBER with your real phone number(China) and YOUR-PASSWORD with your real password.
+   Replace YOUR-PHONE-NUMBER with your real phone number(China) and
+    YOUR-PASSWORD with your real password.
 
    Get YOUR-USER-ID from 'account'. Just like this.
    [[./images/get_id.png]]
@@ -50,9 +50,7 @@
 - =M-x netease-music-play-next= Play next song in this playlist.
 - =M-x netease-music-play-toggle= Toggle current playing status.
 - =M-x netease-music-search= Search songs.
-- =M-x netease-music-i-like-it= Collect song to your "favoriate song list".
 - =M-x netease-music-get-current-playing-artist-songs= Get current playing artist's Best 50 songs.
-- =M-x netease-music-get-current-playing-artist-mvs= Get current playing artist's all mvs.
 
 ** Hot Key setting(Evil)
 #+BEGIN_SRC elisp
@@ -61,11 +59,6 @@
   netease-music-mode-map
   (kbd "RET")
   'netease-music-jump-into)
-(evil-define-key
-  'normal
-  netease-music-mode-map
-  (kbd "l")
-  'netease-music-i-like-it)
 (evil-define-key
   'normal
   netease-music-mode-map
@@ -89,12 +82,9 @@
 - [X] 获取歌单详情
 - [X] 播放歌曲
 - [X] 显示歌词
-- [X] 获取歌手所有 MV
-- [X] 播放 MV
 - [X] 搜索歌曲
 
 ** Thanks
 [[https://github.com/Binaryify/NeteaseCloudMusicApi][Binaryify's NeteaseCloudMusicApi]] For the music api service.
 
 [[https://github.com/zhengyuli/WangyiMusic][WangyiMusic]] For the process code.
-
